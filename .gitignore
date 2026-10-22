@@ -1,1 +1,25 @@
 .venv
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Type checking and tests
+.mypy_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Packaging
+build/
+dist/
+*.egg-info/
+
+# Local configuration and generated data
+highscores.json
+
+# Editors and operating systems
+.vscode/
+.idea/
+.DS_Store

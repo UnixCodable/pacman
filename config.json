@@ -1,0 +1,8 @@
+# Pac-Man configuration
+{
+  "highscore_filename": "highscores.json",
+  "lives": 3,
+  // another comment style
+  "seed": 42,
+  "levels": [ {"width": 15, "height": 15} ]
+}

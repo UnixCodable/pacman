@@ -72,7 +72,7 @@ class ConfigParser:
                 data, "points_per_super_pacgum", 50, 0, 1_000_000),
             points_per_ghost=self.get_int(
                 data, "points_per_ghost", 200, 0, 1_000_000),
-            seed=self.get_int(data, "seed", 42, 0, 2**31 - 1),
+            seed=self.get_int(data, "seed", 42, 1, 2**31 - 1),
             level_max_time=self.get_int(
                 data, "level_max_time", 90, 5, 3600),
         )

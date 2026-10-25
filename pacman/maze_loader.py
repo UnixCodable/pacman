@@ -29,20 +29,14 @@ class MazeGeneration:
     def decode_cells(raw: Any, width: int,
                      height: int) -> list[list[set[Direction]]]:
         """Convert the generator's integer cells into blocked directions."""
-        if not isinstance(raw, list) or len(raw) != height:
-            raise MazeGenerationError("generated maze has the wrong height")
         if width <= 0 or height <= 0:
             raise MazeGenerationError("maze dimensions must be positive")
-        if len(raw) != height:
+        if not isinstance(raw, list) or len(raw) != height:
             raise MazeGenerationError("generated maze has the wrong height")
 
         decoded: list[list[set[Direction]]] = []
         for row in raw:
-            if not isinstance(raw, list) or len(raw) != height:
-                raise MazeGenerationError("generated maze has "
-                                          "the wrong height")
-
-            if len(row) != width:
+            if not isinstance(row, list) or len(row) != width:
                 raise MazeGenerationError("generated maze has the wrong width")
             decoded_row: list[set[Direction]] = []
             for value in row:

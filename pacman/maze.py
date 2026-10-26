@@ -136,9 +136,26 @@ class Maze:
         return ((0, 0), (self.width - 1, 0),
                 (0, self.height - 1), (self.width - 1, self.height - 1))
 
+    def blocked_cells(self) -> list[Coordinate]:
+        """Return every fully walled cell (the '42' blocks)."""
+        return [c for c in self.all_cells() if self.is_blocked(*c)]
+
     def player_start(self) -> Coordinate:
-        """Return the open cell closest to the centre."""
-        return self.nearest_open_cell(self.center())
+        """Return the start cell: the middle of the '42' shape.
+
+        The centre of the bounding box of the blocked cells is the gap
+        between the '4' and the '2'. Without blocked cells (small maze),
+        the geometric centre is used. If that cell is itself blocked, the
+        nearest open cell is returned.
+        """
+        blocked = self.blocked_cells()
+        if blocked:
+            xs = [x for x, _ in blocked]
+            ys = [y for _, y in blocked]
+            target = ((min(xs) + max(xs)) // 2, (min(ys) + max(ys)) // 2)
+        else:
+            target = self.center()
+        return self.nearest_open_cell(target)
 
     def ghost_starts(self) -> list[Coordinate]:
         """Return the open cell closest to each corner."""

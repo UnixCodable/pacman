@@ -1,7 +1,7 @@
 import pygame as pg
 import sys
 from abc import ABC, abstractmethod
-
+from actions.views_actions import ViewAction
 
 class View(ABC):
 
@@ -21,8 +21,8 @@ class Settings(View):
     def _get_events(self):
         for event in pg.event.get():
             if event.type == pg.QUIT:
-                pg.quit()
-                sys.exit(0)
+                pg.event.post(ViewAction.EXIT.value)
+                self._running = False
 
     def run(self):
         while self._running:
@@ -37,8 +37,8 @@ class Leaderboard(View):
     def _get_events(self):
         for event in pg.event.get():
             if event.type == pg.QUIT:
-                pg.quit()
-                sys.exit(0)
+                pg.event.post(ViewAction.EXIT.value)
+                self._running = False
 
     def run(self):
         while self._running:

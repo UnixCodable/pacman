@@ -20,14 +20,17 @@ class Window:
         self.menu.run()
         while self._running:
             for event in pg.event.get():
-                if event.type == ViewAction.SETTINGS:
+                if event.type == ViewAction.SETTINGS.value:
                     self.settings.run()
-                if event.type == ViewAction.LEADERBOARD:
+                if event.type == ViewAction.LEADERBOARD.value:
                     self.leaderboard.run()
-                if event.type == ViewAction.EXIT:
+                if event.type == ViewAction.EXIT.value:
                     self._running = False
-                if event.type == ViewAction.GAME:
+                    break
+                if event.type == ViewAction.GAME.value:
                     self.game.run()
+        pg.quit()
+        sys.exit(0)
 
 
 if __name__ == "__main__":

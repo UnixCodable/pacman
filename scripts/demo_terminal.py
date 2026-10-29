@@ -4,7 +4,11 @@ Usage (from the project root):
     python3 scripts/demo_terminal.py                # play with WASD / arrows
     python3 scripts/demo_terminal.py --auto         # watch a random walk
     python3 scripts/demo_terminal.py --snapshot     # print one frame and exit
+    python3 scripts/demo_terminal.py --snapshot --advance 30   # after 30 s
 Options: --size WxH (default 16x16)  --seed N (default 42)
+Legend: @ you, . pacgum, O super-pacgum, blocks = the 42.
+Ghosts: C chaser, A ambusher, U unpredictable, W wanderer
+(lowercase when edible, ~ while waiting at home).
 Keys: w a s d or arrows = move, p = pause, q = quit.
 """
 
@@ -17,7 +21,7 @@ import time
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from pacman.game import Game, GameState  # noqa: E402
+from pacman.game import Game  # noqa: E402
 from pacman.maze import Direction, Maze  # noqa: E402
 from pacman.maze_loader import (  # noqa: E402
     MazeGeneration, MazeGenerationError)
@@ -47,12 +51,30 @@ def render(game: Game) -> str:
                 canvas[cy + d.dy][cx + d.dx] = "#"
         for dx, dy in ((-1, -1), (1, -1), (-1, 1), (1, 1)):
             canvas[cy + dy][cx + dx] = "+"
+    for x, y in game.pacgums:
+        canvas[2 * y + 1][2 * x + 1] = "."
+    for x, y in game.super_pacgums:
+        canvas[2 * y + 1][2 * x + 1] = "O"
+    for ghost in game.ghosts:
+        letter = ghost.personality[0].upper()
+        gx, gy = ghost.position
+        if ghost.is_respawning:
+            letter = "~"
+        elif ghost.frightened:
+            letter = letter.lower()
+        canvas[2 * gy + 1][2 * gx + 1] = letter
     px, py = game.player.position
     canvas[2 * py + 1][2 * px + 1] = "@"
     lines = ["".join(row) for row in canvas]
     arrow = game.player.direction.name if game.player.direction else "-"
-    status = "PAUSED" if game.state is GameState.PAUSED else "PLAYING"
-    lines.append(f"pos={game.player.position} moving={arrow} [{status}]")
+    status = game.state.name
+    power = ""
+    if game.ghosts_edible:
+        power = f" power={game.power_time_left:4.1f}s"
+    lines.append(f"score={game.score} lives={game.lives} "
+                 f"left={len(game.pacgums)}"
+                 f"+{len(game.super_pacgums)} pos={game.player.position} "
+                 f"moving={arrow} [{status}]{power}")
     return "\n".join(lines)
 
 
@@ -107,6 +129,8 @@ def main() -> int:
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--auto", action="store_true")
     parser.add_argument("--snapshot", action="store_true")
+    parser.add_argument("--advance", type=float, default=0.0,
+                        help="with --snapshot: simulate this many seconds")
     args = parser.parse_args()
     try:
         width, height = (int(v) for v in args.size.lower().split("x"))
@@ -118,8 +142,13 @@ def main() -> int:
     except MazeGenerationError as error:
         print(f"Error: {error}")
         return 1
-    game = Game(maze)
+    game = Game(maze, rng=random.Random(args.seed))
     if args.snapshot:
+        rng = random.Random(1)
+        for i in range(int(args.advance / 0.1)):
+            if i % 12 == 0:
+                game.set_direction(rng.choice(list(Direction)))
+            game.update(0.1)
         print(render(game))
         return 0
     if not sys.stdin.isatty() and not args.auto:

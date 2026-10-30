@@ -1,34 +1,40 @@
 import pygame as pg
 import sys
-from views import Menu, Settings, Leaderboard, Game
+from pyvidplayer2 import Video
+from views import Cinematics, Menu, Settings, Leaderboard, Game
 from actions.views_actions import ViewAction
 
 pg.init()
-pg.display.set_caption("Pacman: 50 years later")
+pg.display.set_caption("Pacman: 44 years later")
 
 
 class Window:
     def __init__(self):
-        pg.display.set_mode((1920, 1080))
+        self._surface = pg.display.set_mode((1440, 1080))
         self._running = True
-        self.menu = Menu()
-        self.settings = Settings()
-        self.leaderboard = Leaderboard()
-        self.game = Game()
+        self._intro = Cinematics(
+            Video('pacman/interface/assets/cinematics/intro.mp4'),
+            self._surface
+        )
+        self._menu = Menu(self._surface)
+        self._settings = Settings()
+        self._leaderboard = Leaderboard()
+        self._game = Game()
 
     def launch(self) -> None:
-        self.menu.run()
+        self._intro.run()
+        self._menu.run()
         while self._running:
             for event in pg.event.get():
                 if event.type == ViewAction.SETTINGS.value:
-                    self.settings.run()
+                    self._settings.run()
                 if event.type == ViewAction.LEADERBOARD.value:
-                    self.leaderboard.run()
+                    self._leaderboard.run()
+                if event.type == ViewAction.GAME.value:
+                    self._game.run()
                 if event.type == ViewAction.EXIT.value:
                     self._running = False
                     break
-                if event.type == ViewAction.GAME.value:
-                    self.game.run()
         pg.quit()
         sys.exit(0)
 

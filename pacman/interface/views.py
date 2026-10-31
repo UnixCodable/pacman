@@ -29,7 +29,6 @@ class Settings(View):
     def run(self):
         while self._running:
             self._get_events()
-            pg.image.frombuffer()
             pg.display.flip()
 
 

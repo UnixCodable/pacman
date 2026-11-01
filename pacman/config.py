@@ -65,7 +65,7 @@ class ConfigParser:
                 data, "highscore_filename", DEFAULT_HIGHSCORE_FILE),
             levels=self.parse_levels(data),
             lives=self.get_int(data, "lives", 3, 1, 99),
-            pacgum=self.get_int(data, "pacgum", 42, 1, 10_000),
+            # pacgum=self.get_int(data, "pacgum", 42, 1, 10_000),
             points_per_pacgum=self.get_int(
                 data, "points_per_pacgum", 10, 0, 1_000_000),
             points_per_super_pacgum=self.get_int(

@@ -1,5 +1,7 @@
 import pygame as pg
 import sys
+from buttons import MenuButton
+from tools.scales import scale_text, scale_size, scale_pos
 from pyvidplayer2 import Video
 from abc import ABC, abstractmethod
 from actions.views_actions import ViewAction
@@ -49,6 +51,7 @@ class Leaderboard(View):
 
 
 class Game(View):
+
     def __init__(self):
         self._running = True
 
@@ -115,6 +118,17 @@ class Menu(View):
             if event.type == pg.QUIT:
                 pg.event.post(pg.event.Event(ViewAction.EXIT.value))
                 self._running = False
+
+    def _update_buttons(self) -> None:
+        self.menu_button_play = MenuButton(
+            scale_pos(0.2, 0.33), "Play", ViewAction.MAP_SELECTION)
+
+        self.menu_button_settings = MenuButton(
+            scale_pos(0.2, 0.46), "Settings", ViewAction.SETTINGS)
+
+        self.menu_button_exit = MenuButton(
+            scale_pos(0.2, 0.59), "Exit", ViewAction.EXIT)
+
 
     def run(self):
         self._surface.fill('goldenrod2')

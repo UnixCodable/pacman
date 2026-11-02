@@ -1,6 +1,7 @@
 import pygame as pg
 
 from enum import Enum
+from tools.scales import scale_pos, scale_size, scale_text
 from abc import ABC, abstractmethod
 
 
@@ -41,12 +42,11 @@ class MenuButton(Button):
                  surface: pg.Surface,
                  action: Enum) -> None:
 
-        super().__init__(pos, tag, scale_size(0.15, 0.05), surface, action)
+        super().__init__(pos, tag, scale_size(15, 5), surface, action)
 
         self._color = pg.Color(255, 255, 255)
         self._color_hover = pg.Color(255, 228, 54)
-        self._font = pg.font.Font("assets/fonts/Starjhol.ttf",
-                                  scale_text(0.025))
+        self._font = pg.font.Font("assets/fonts/Emulogic.ttf", scale_text(2.5))
 
     def render(self) -> None:
 
@@ -72,7 +72,7 @@ class MenuButton(Button):
             self.clickable = True
             pg.mouse.set_cursor(self.clickable_cursor)
             pg.Surface.fill(
-                Window.surface, self.color_hover, self.rect, pg.BLEND_MIN)
+                self._surface, self.color_hover, self.rect, pg.BLEND_MIN)
             pg.Surface.fill(
                 self.text, self.color_hover, special_flags=pg.BLEND_MIN)
 

@@ -1,13 +1,18 @@
 import pygame as pg
 import sys
 from buttons import MenuButton
-from tools.scales import scale_text, scale_size, scale_pos
+from tools.scales import Scaling
 from pyvidplayer2 import Video
 from abc import ABC, abstractmethod
 from actions.views_actions import ViewAction
 
 
 class View(ABC):
+
+    def __init__(self, surface: pg.Surface) -> None:
+        self._running = True
+        self._surface = surface
+        self._scale = Scaling(self._surface)
 
     @abstractmethod
     def _get_events(self):
@@ -75,12 +80,13 @@ class Cinematics(View):
                  speed: float = 1,
                  begin_frame: int = 1,
                  end_frame: int | None = None):
+
+        super().__init__(surface)
+
         self._video: Video = video
         self._video.set_speed(speed)
         self._video.seek_frame(begin_frame)
-        self._surface = surface
         self._end_frame = end_frame if end_frame else 0
-        self._running = True
 
     def _get_events(self) -> None:
         for event in pg.event.get():
@@ -109,8 +115,9 @@ class Cinematics(View):
 
 class Menu(View):
     def __init__(self, surface: pg.Surface):
-        self._running = True
-        self._surface = surface
+
+        super().__init__(surface)
+
         self._footer = pg.image.load('pacman/interface/assets/footer.png')
 
     def _get_events(self):
@@ -121,13 +128,32 @@ class Menu(View):
 
     def _update_buttons(self) -> None:
         self._menu_button_play = MenuButton(
-            scale_pos(0.2, 0.33), "Play", ViewAction.GAME)
+            self._scale.pos(20, 10),
+            self._scale.size(15, 5),
+            "Play",
+            self._surface,
+            ViewAction.GAME)
+
+        self._menu_button_leaderboard = MenuButton(
+            self._scale.pos(20, 20),
+            self._scale.size(33, 5),
+            "Leaderboard",
+            self._surface,
+            ViewAction.LEADERBOARD)
 
         self._menu_button_settings = MenuButton(
-            scale_pos(0.2, 0.46), "Settings", ViewAction.SETTINGS)
+            self._scale.pos(20, 30),
+            self._scale.size(25, 5),
+            "Settings",
+            self._surface,
+            ViewAction.SETTINGS)
 
         self._menu_button_exit = MenuButton(
-            scale_pos(0.2, 0.59), "Exit", ViewAction.EXIT)
+            self._scale.pos(20, 40),
+            self._scale.size(15, 5),
+            "Exit",
+            self._surface,
+            ViewAction.EXIT)
 
     def run(self):
         self._surface.fill('goldenrod2')
@@ -139,8 +165,13 @@ class Menu(View):
         footer_scale = ((surface_w * 100) / footer_w) / 100
         scaled_footer = pg.transform.scale_by(self._footer, footer_scale)
 
+        self._update_buttons()
+
         while self._running:
             self._get_events()
-            self._update_buttons()
+            self._menu_button_play.render()
+            self._menu_button_leaderboard.render()
+            self._menu_button_settings.render()
+            self._menu_button_exit.render()
             self._surface.blit(scaled_footer, (0, surface_h - scaled_footer.get_height()))
             pg.display.flip()

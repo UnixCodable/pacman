@@ -120,15 +120,14 @@ class Menu(View):
                 self._running = False
 
     def _update_buttons(self) -> None:
-        self.menu_button_play = MenuButton(
-            scale_pos(0.2, 0.33), "Play", ViewAction.MAP_SELECTION)
+        self._menu_button_play = MenuButton(
+            scale_pos(0.2, 0.33), "Play", ViewAction.GAME)
 
-        self.menu_button_settings = MenuButton(
+        self._menu_button_settings = MenuButton(
             scale_pos(0.2, 0.46), "Settings", ViewAction.SETTINGS)
 
-        self.menu_button_exit = MenuButton(
+        self._menu_button_exit = MenuButton(
             scale_pos(0.2, 0.59), "Exit", ViewAction.EXIT)
-
 
     def run(self):
         self._surface.fill('goldenrod2')
@@ -142,5 +141,6 @@ class Menu(View):
 
         while self._running:
             self._get_events()
+            self._update_buttons()
             self._surface.blit(scaled_footer, (0, surface_h - scaled_footer.get_height()))
             pg.display.flip()

@@ -50,13 +50,13 @@ class MenuButton(Button):
 
     def render(self) -> None:
 
-        self.text = self.font.render(self.tag, True, self.color)
-        center_text = ((self.rect.width - self.text.get_width()) / 2,
-                       (self.rect.height - self.text.get_height()) / 2 * 0.6)
+        self.text = self._font.render(self._tag, True, self._color)
+        center_text = ((self._rect.width - self.text.get_width()) / 2,
+                       (self._rect.height - self.text.get_height()) / 2 * 0.6)
 
-        pg.draw.rect(self._surface, self.color, self.rect, 6, 10)
-        self._surface.blit(self.text, (self.pos[0] + center_text[0],
-                           self.pos[1] + center_text[1]))
+        pg.draw.rect(self._surface, self._color, self._rect, 6, 10)
+        self._surface.blit(self.text, (self._pos[0] + center_text[0],
+                           self._pos[1] + center_text[1]))
 
         self._collide()
 
@@ -64,23 +64,23 @@ class MenuButton(Button):
 
         mouse = pg.mouse.get_pos()
 
-        if self.rect.collidepoint(mouse):
+        if self._rect.collidepoint(mouse):
 
-            if self.clickable is False:
-                pg.mixer.Channel(1).play(self.sound)
+            if self._clickable is False:
+                pg.mixer.Channel(1).play(self._sound)
 
             self.clickable = True
-            pg.mouse.set_cursor(self.clickable_cursor)
+            pg.mouse.set_cursor(self._clickable_cursor)
             pg.Surface.fill(
-                self._surface, self.color_hover, self.rect, pg.BLEND_MIN)
+                self._surface, self._color_hover, self._rect, pg.BLEND_MIN)
             pg.Surface.fill(
-                self.text, self.color_hover, special_flags=pg.BLEND_MIN)
+                self.text, self._color_hover, special_flags=pg.BLEND_MIN)
 
             for event in pg.event.get():
                 if event.type == pg.MOUSEBUTTONUP and event.button == 1:
-                    pg.event.post(pg.event.Event(self.action.value))
-                    pg.mouse.set_cursor(self.arrow_cursor)
+                    pg.event.post(pg.event.Event(self._action.value))
+                    pg.mouse.set_cursor(self._arrow_cursor)
 
         elif self.clickable is True:
             self.clickable = False
-            pg.mouse.set_cursor(self.arrow_cursor)
+            pg.mouse.set_cursor(self._arrow_cursor)

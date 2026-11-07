@@ -4,5 +4,6 @@
   "lives": 3,
   // another comment style
   "seed": 42,
-  "levels": [ {"width": 15, "height": 15} ]
+  "levels": [ {"width": 15, "height": 15},
+               {"width": 15, "height": 15}]
 }

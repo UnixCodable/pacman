@@ -4,10 +4,10 @@ import math
 import random
 from enum import Enum, auto
 
-from pacman.cheats import Cheats
-from pacman.entities import Player
-from pacman.ghost import TIME_EPSILON, Ghost
-from pacman.maze import Coordinate, Direction, Maze
+from src.cheats import SPEED_BOOST_FACTOR, Cheats
+from src.entities import Player
+from src.ghost import TIME_EPSILON, Ghost
+from src.maze import Coordinate, Direction, Maze
 
 
 MAX_FRAME_TIME = 0.25
@@ -18,8 +18,6 @@ GHOST_MOVE_INTERVAL = 0.27
 
 GHOST_RESPAWN_DELAY = 7.0
 GHOST_RELEASE_STAGGER = 2.0
-
-SPEED_BOOST_FACTOR = 1.5
 
 
 class GameState(Enum):
@@ -124,8 +122,7 @@ class Game:
 
     @property
     def player_interval(self) -> float:
-        """Return the player's movement interval,
-          accounting for speed boost."""
+        """Return the player's seconds per move (shorter with speed boost)."""
 
         if self.cheats.enabled and self.cheats.speed_boost:
             return self.move_interval / SPEED_BOOST_FACTOR

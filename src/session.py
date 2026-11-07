@@ -2,38 +2,76 @@
 
 import logging
 import random
-from pacman.cheats import Cheat
-from typing import Callable, Protocol, Sequence
+from collections.abc import Callable, Sequence
+from typing import Protocol
 
-from pacman.cheats import Cheats
-from pacman.game import Game, GameState
-from pacman.maze import Direction, Maze
-from pacman.maze_loader import MazeGeneration, MazeGenerationError
+from src.cheats import LOW_TIME_SECONDS, Cheat, Cheats
+from src.game import Game, GameState
+from src.maze import Direction, Maze
+from src.maze_loader import MazeGeneration, MazeGenerationError
 
 
 logger = logging.getLogger(__name__)
 
 LEVEL_TRANSITION_DELAY = 2.0
-LOW_TIME_SECONDS = 10.0
 
 
 class LevelConfig(Protocol):
-    """Configuration for one level."""
+    """Configuration for one level (read-only view)."""
 
-    width: int
-    height: int
+    @property
+    def width(self) -> int:
+        """Return the maze width."""
+        ...
+
+    @property
+    def height(self) -> int:
+        """Return the maze height."""
+        ...
 
 
 class SessionConfig(Protocol):
-    """Configuration shared by the entire game session."""
+    """Configuration shared by the entire game session (read-only view).
 
-    levels: Sequence[LevelConfig]
-    seed: int | None
-    lives: int
-    points_per_pacgum: int
-    points_per_super_pacgum: int
-    points_per_ghost: int
-    level_max_time: float
+    Properties are used instead of plain attributes so that the real
+    Config dataclass is accepted (for example a list of levels where a
+    Sequence is expected, or an int where a float is expected).
+    """
+
+    @property
+    def levels(self) -> Sequence[LevelConfig]:
+        """Return the per-level settings."""
+        ...
+
+    @property
+    def seed(self) -> int | None:
+        """Return the seed of the first level."""
+        ...
+
+    @property
+    def lives(self) -> int:
+        """Return the number of starting lives."""
+        ...
+
+    @property
+    def points_per_pacgum(self) -> int:
+        """Return the points for a pacgum."""
+        ...
+
+    @property
+    def points_per_super_pacgum(self) -> int:
+        """Return the points for a super pacgum."""
+        ...
+
+    @property
+    def points_per_ghost(self) -> int:
+        """Return the points for an eaten ghost."""
+        ...
+
+    @property
+    def level_max_time(self) -> float:
+        """Return the time limit of one level in seconds."""
+        ...
 
 
 MazeFactory = Callable[
@@ -175,32 +213,36 @@ class GameSession:
             status = "ON" if self.cheats.invincible else "OFF"
             return f"Invincibility {status}"
 
-        elif cheat is Cheat.FREEZE_GHOSTS:
+        if cheat is Cheat.FREEZE_GHOSTS:
             self.cheats.freeze_ghosts = not self.cheats.freeze_ghosts
 
             status = "ON" if self.cheats.freeze_ghosts else "OFF"
             return f"Ghost freeze {status}"
 
-        elif cheat is Cheat.SPEED_BOOST:
+        if cheat is Cheat.SPEED_BOOST:
             self.cheats.speed_boost = not self.cheats.speed_boost
 
             status = "ON" if self.cheats.speed_boost else "OFF"
             return f"Speed boost {status}"
 
-        elif cheat is Cheat.EXTRA_LIFE:
+        if cheat is Cheat.EXTRA_LIFE:
             self.game.lives += 1
             return f"Lives: {self.game.lives}"
 
-        elif cheat is Cheat.SKIP_LEVEL:
+        if cheat is Cheat.SKIP_LEVEL:
+            # force_win() only works while the level is being played.
+            if self._level_state() is not GameState.PLAYING:
+                return "Cannot skip the level right now"
+
             self.game.force_win()
             self._check_level_end()
             return "Level skipped"
 
-        elif cheat is Cheat.POWER_UP:
+        if cheat is Cheat.POWER_UP:
             self.game.activate_power()
             return "Power-up active"
 
-        elif cheat is Cheat.LOW_TIME:
+        if cheat is Cheat.LOW_TIME:
             self.game.time_left = min(
                 self.game.time_left,
                 LOW_TIME_SECONDS,
@@ -255,7 +297,14 @@ class GameSession:
             )
 
         except MazeGenerationError as error:
-            logger.exception("Could not generate level %d", next_index + 1)
+            # logger.error, not logger.exception: the player must never
+            # see a traceback. Use PACMAN_DEBUG / debug logging for that.
+            logger.error(
+                "Could not generate level %d: %s",
+                next_index + 1,
+                error,
+            )
+            logger.debug("Level generation failure", exc_info=True)
 
             self.error = str(error)
             self._ended = GameState.GAME_OVER
@@ -320,6 +369,7 @@ class GameSession:
                 self._next_level()
 
             return
+
         self.game.update(dt)
 
         self._check_level_end()

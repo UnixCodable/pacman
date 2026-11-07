@@ -36,7 +36,6 @@ class Config:
     highscore_filename: str
     levels: list[LevelConfig]
     lives: int
-    pacgum: int
     points_per_pacgum: int
     points_per_super_pacgum: int
     points_per_ghost: int
@@ -65,7 +64,6 @@ class ConfigParser:
                 data, "highscore_filename", DEFAULT_HIGHSCORE_FILE),
             levels=self.parse_levels(data),
             lives=self.get_int(data, "lives", 3, 1, 99),
-            # pacgum=self.get_int(data, "pacgum", 42, 1, 10_000),
             points_per_pacgum=self.get_int(
                 data, "points_per_pacgum", 10, 0, 1_000_000),
             points_per_super_pacgum=self.get_int(
@@ -107,6 +105,8 @@ class ConfigParser:
         except json.JSONDecodeError as e:
             raise ConfigError(
                 f"invalid JSON at line {e.lineno}: {e.msg}") from e
+        except RecursionError as e:
+            raise ConfigError("JSON is nested too deeply") from e
 
         if not isinstance(data, dict):
             raise ConfigError("top level must be a JSON object")

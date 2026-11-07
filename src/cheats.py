@@ -1,11 +1,14 @@
-from enum import Enum
-from dataclasses import dataclass
+"""Cheat mode: switches that let a reviewer reach every feature quickly."""
 
-SPEED_BOOST_FACTOR = 1.6
-LOW_TIME_SECONDS = 5.0
+from dataclasses import dataclass
+from enum import Enum
+
+SPEED_BOOST_FACTOR = 1.5
+LOW_TIME_SECONDS = 10.0
 
 
 class Cheat(Enum):
+    """Every cheat a reviewer can trigger."""
 
     INVINCIBLE = "invincibility"
     FREEZE_GHOSTS = "ghost freeze"
@@ -18,8 +21,7 @@ class Cheat(Enum):
 
 @dataclass
 class Cheats:
-
-    """Stores cheat settings shared across every level in a run."""
+    """Store the cheat switches shared by every level of one run."""
 
     enabled: bool = False
     invincible: bool = False

@@ -1,6 +1,6 @@
 """Moving entities of the game."""
 
-from pacman.maze import Coordinate, Direction, Maze
+from src.maze import Coordinate, Direction, Maze
 
 
 class Player:

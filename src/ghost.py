@@ -4,8 +4,8 @@ import random
 from collections import deque
 from collections.abc import Iterator
 
-from pacman.entities import Player
-from pacman.maze import Coordinate, Direction, Maze
+from src.entities import Player
+from src.maze import Coordinate, Direction, Maze
 
 TIME_EPSILON = 1e-9               # absorbs float rounding in timers
 FRIGHTENED_SLOWDOWN = 1.35        # edible ghosts move 35% slower

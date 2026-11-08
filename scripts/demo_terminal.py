@@ -19,8 +19,7 @@ Legend: @ you, . pacgum, O super-pacgum, blocks = the 42.
 Ghosts: C chaser, A ambusher, U unpredictable, W wanderer
 (lowercase when edible, ~ while waiting at home).
 """
-
-import argparse
+from sys import argv
 import os
 import random
 import select
@@ -31,7 +30,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from src.cheats import Cheat  # noqa: E402
 from src.config import (  # noqa: E402
-    Config, ConfigError, ConfigParser, LevelConfig)
+ ConfigError, ConfigParser)
 from src.game import GameState  # noqa: E402
 from src.highscores import HighscoreTable, sanitize_name  # noqa: E402
 from src.maze import Direction  # noqa: E402
@@ -165,49 +164,25 @@ def finish(session: GameSession, path: str) -> None:
 
 def main() -> int:
     """Parse options, build a session and run it."""
-    parser = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=argparse.
-                                     RawDescriptionHelpFormatter)
-    parser.add_argument("--config")
-    parser.add_argument("--levels", type=int, default=3)
-    parser.add_argument("--size", default="16x16")
-    parser.add_argument("--time", type=int, default=90)
-    parser.add_argument("--lives", type=int, default=3)
-    parser.add_argument("--highscores", default="demo_highscores.json")
-    parser.add_argument("--snapshot", action="store_true")
-    args = parser.parse_args()
-    if args.config:
-        try:
-            config = ConfigParser().load_config(args.config)
-        except ConfigError as error:
-            print(f"Error: {error}")
-            return 1
-        args.highscores = config.highscore_filename
-    else:
-        try:
-            width, height = (int(v) for v in args.size.lower().split("x"))
-        except ValueError:
-            print("Error: --size must look like 16x16")
-            return 1
-        config = Config(
-            highscore_filename=args.highscores,
-            levels=[LevelConfig(width, height) for _ in range(args.levels)],
-            lives=args.lives, points_per_pacgum=10,
-            points_per_super_pacgum=50, points_per_ghost=200, seed=42,
-            level_max_time=args.time)
+
+    try:
+        config = ConfigParser().load_config(argv[1])
+    except ConfigError as error:
+        print(f"Error: {error}")
+        return 1
     try:
         session = GameSession(config, rng=random.Random())
     except MazeGenerationError as error:
         print(f"Error: {error}")
         return 1
-    if args.snapshot:
-        print(render(session))
-        return 0
+    # if args.snapshot:
+    #     print(render(session))
+    #     return 0
     if not sys.stdin.isatty():
         print("Error: this demo needs a terminal")
         return 1
     play(session)
-    finish(session, args.highscores)
+    # finish(session, args.highscores)
     return 0
 
 

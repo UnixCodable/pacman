@@ -1,8 +1,6 @@
 """Application entry point and startup error handling."""
 
-
 import logging
-import os
 from collections.abc import Callable, Sequence
 from typing import Any
 
@@ -10,10 +8,6 @@ from src.config import ConfigParser, ConfigError
 from src.maze_loader import MazeGenerationError
 
 EXIT_INTERRUPTED = 130
-
-USAGE = "Usage: python pac-man.py <config-file>"
-
-logger = logging.getLogger(__name__)
 
 UIRunner = Callable[[Any], int]
 
@@ -49,7 +43,7 @@ def main(
     configure_logging()
 
     if len(argv) != 2:
-        print(USAGE)
+        print("Usage: python pac-man.py <config-file>")
         return 1
 
     try:
@@ -77,12 +71,6 @@ def main(
         return 1
 
     except Exception as error:
-        if os.environ.get("PACMAN_DEBUG"):
-            raise
 
-        logger.debug(
-            "Unexpected application error",
-            exc_info=True,
-        )
         print(f"Error: unexpected problem: {error}")
         return 1

@@ -46,10 +46,20 @@ class Game:
         lives: int = 3,
         score: int = 0,
         level_max_time: float = 90.0,
+        ghost_speed: float = 1.0,
+        ghost_count: int | None = None,
         cheats: Cheats | None = None,
         rng: random.Random | None = None,
     ) -> None:
         """Create a game on a maze, with everyone on their start cell."""
+
+        if ghost_speed <= 0:
+            raise ValueError("ghost_speed must be greater than zero.")
+
+        if ghost_count is not None and (
+            type(ghost_count) is not int or ghost_count < 1
+        ):
+            raise ValueError("ghost_count must be a positive integer.")
 
         self.maze = maze
         self.rng = rng if rng is not None else random.Random()
@@ -89,17 +99,37 @@ class Game:
         self.power_time_left = 0.0
 
         # Ghosts
-        ghost_starts = list(maze.ghost_starts())
+        all_ghost_starts = list(maze.ghost_starts())
+
+        if ghost_count is None:
+            ghost_count = len(all_ghost_starts)
+
+        if ghost_count > len(all_ghost_starts):
+            raise ValueError(
+                f"This maze has only {len(all_ghost_starts)} ghost "
+                f"starting positions, but {ghost_count} were requested."
+            )
+
+        ghost_starts = all_ghost_starts[:ghost_count]
 
         if ghost_move_intervals is None:
             ghost_move_intervals = [
-                ghost_move_interval for _ in ghost_starts
+                ghost_move_interval
+                for _ in ghost_starts
             ]
 
-        if len(ghost_move_intervals) != len(ghost_starts):
+        if len(ghost_move_intervals) != ghost_count:
             raise ValueError(
                 "Provide exactly one movement interval for each ghost."
             )
+
+        self.ghost_speed = ghost_speed
+
+        # A higher multiplier means a shorter movement interval.
+        adjusted_intervals = [
+            interval / ghost_speed
+            for interval in ghost_move_intervals
+        ]
 
         self.ghosts = [
             Ghost(
@@ -107,7 +137,7 @@ class Game:
                 personality=Ghost.PERSONALITIES[
                     i % len(Ghost.PERSONALITIES)
                 ],
-                move_interval=ghost_move_intervals[i],
+                move_interval=adjusted_intervals[i],
                 respawn_delay=GHOST_RESPAWN_DELAY,
                 start_delay=i * GHOST_RELEASE_STAGGER,
                 rng=self.rng,
@@ -122,7 +152,7 @@ class Game:
 
     @property
     def player_interval(self) -> float:
-        """Return the player's seconds per move (shorter with speed boost)."""
+        """Return the player's seconds per move."""
 
         if self.cheats.enabled and self.cheats.speed_boost:
             return self.move_interval / SPEED_BOOST_FACTOR
@@ -161,10 +191,8 @@ class Game:
         elif cell in self.super_pacgums:
             self.super_pacgums.remove(cell)
             self.score += self.points_per_super_pacgum
-
             self.activate_power()
 
-        # Check for level completion.
         if not self.pacgums and not self.super_pacgums:
             self.state = GameState.LEVEL_WON
 
@@ -184,7 +212,6 @@ class Game:
 
         self._lose_life()
 
-        # If the player still has lives, restart the level clock.
         if self.state is GameState.PLAYING:
             self.time_left = self.level_max_time
 
@@ -220,6 +247,7 @@ class Game:
         self.state = GameState.PLAYING
         self._accumulator = 0.0
         self.power_time_left = 0.0
+        self.time_left = self.level_max_time
 
     def force_win(self) -> None:
         """Complete the current level immediately."""
@@ -235,7 +263,7 @@ class Game:
         return min(
             SUBSTEP,
             self.player_interval / 2,
-            *(g.move_interval / 2 for g in self.ghosts),
+            *(ghost.move_interval / 2 for ghost in self.ghosts),
         )
 
     def _advance(self, dt: float) -> None:
@@ -294,13 +322,11 @@ class Game:
         if self.state is not GameState.PLAYING:
             return
 
-        # Limit unusually large frame times.
         remaining = max(
             0.0,
             min(dt, MAX_FRAME_TIME),
         )
 
-        # Simulate in short slices so collisions are not skipped.
         slices = max(
             1,
             math.ceil(

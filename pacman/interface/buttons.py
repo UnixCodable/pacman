@@ -72,7 +72,7 @@ class MenuButton(Button):
             # if self._clickable is False:
             #     pg.mixer.Channel(1).play(self._sound)
 
-            self.clickable = True
+            self._clickable = True
             pg.mouse.set_cursor(self._clickable_cursor)
             pg.Surface.fill(
                 self._surface, self._color_hover, self._rect, pg.BLEND_MIN)

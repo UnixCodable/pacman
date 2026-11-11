@@ -21,20 +21,26 @@ class Window:
         self._leaderboard = Leaderboard()
         self._game = Game()
 
+    def _get_events(self):
+        for event in pg.event.get():
+            if event.type == ViewAction.SETTINGS.value:
+                self._settings.run()
+            if event.type == ViewAction.LEADERBOARD.value:
+                self._leaderboard.run()
+            if event.type == ViewAction.GAME.value:
+                self._game.run()
+            if event.type == ViewAction.EXIT.value:
+                self._running = False
+                pg.quit()
+                sys.exit(0)
+                break
+
     def launch(self) -> None:
         self._intro.run()
+        self._get_events()
         self._menu.run()
         while self._running:
-            for event in pg.event.get():
-                if event.type == ViewAction.SETTINGS.value:
-                    self._settings.run()
-                if event.type == ViewAction.LEADERBOARD.value:
-                    self._leaderboard.run()
-                if event.type == ViewAction.GAME.value:
-                    self._game.run()
-                if event.type == ViewAction.EXIT.value:
-                    self._running = False
-                    break
+            self._get_events()
         pg.quit()
         sys.exit(0)
 

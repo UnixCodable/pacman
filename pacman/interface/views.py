@@ -127,43 +127,56 @@ class Menu(View):
                 self._running = False
 
     def _update_buttons(self) -> None:
+        width = self._surface.get_width()
+        height = self._surface.get_height() * 0.7
+
+        size_play = self._scale.size(15, 5)
+        size_leaderboard = self._scale.size(33, 5)
+        size_settings = self._scale.size(25, 5)
+        size_exit = self._scale.size(15, 5)
+
+        pos_play = ((width / 2) - (size_play[0] / 2), height / 4)
+        pos_leaderboard = ((width / 2) - (size_leaderboard[0] / 2), height / 4 * 2)
+        pos_settings = ((width / 2) - (size_settings[0] / 2), height / 4 * 3)
+        pos_exit = ((width / 2) - (size_exit[0] / 2), height / 4 * 4)
+
         self._menu_button_play = MenuButton(
-            self._scale.pos(20, 10),
-            self._scale.size(15, 5),
+            pos_play,
+            size_play,
             "Play",
             self._surface,
             ViewAction.GAME)
 
         self._menu_button_leaderboard = MenuButton(
-            self._scale.pos(20, 20),
-            self._scale.size(33, 5),
+            pos_leaderboard,
+            size_leaderboard,
             "Leaderboard",
             self._surface,
             ViewAction.LEADERBOARD)
 
         self._menu_button_settings = MenuButton(
-            self._scale.pos(20, 30),
-            self._scale.size(25, 5),
+            pos_settings,
+            size_settings,
             "Settings",
             self._surface,
             ViewAction.SETTINGS)
 
         self._menu_button_exit = MenuButton(
-            self._scale.pos(20, 40),
-            self._scale.size(15, 5),
+            pos_exit,
+            size_exit,
             "Exit",
             self._surface,
             ViewAction.EXIT)
 
     def run(self):
-        self._surface.fill('goldenrod2')
+        self._surface.fill('wheat')
 
         surface_w = self._surface.get_width()
         surface_h = self._surface.get_height()
         footer_w = self._footer.get_width()
 
         footer_scale = ((surface_w * 100) / footer_w) / 100
-        scaled_footer = pg.transform.scale_by(self._footer, footer_scale)
+        # scaled_footer = pg.transform.scale_by(self._footer, footer_scale)
 
         self._update_buttons()
 
@@ -173,5 +186,5 @@ class Menu(View):
             self._menu_button_leaderboard.render()
             self._menu_button_settings.render()
             self._menu_button_exit.render()
-            self._surface.blit(scaled_footer, (0, surface_h - scaled_footer.get_height()))
+            # self._surface.blit(scaled_footer, (0, surface_h - scaled_footer.get_height()))
             pg.display.flip()

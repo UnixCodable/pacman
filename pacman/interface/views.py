@@ -1,5 +1,9 @@
+from time import time
+from typing import Generator
+
 import pygame as pg
 import sys
+from itertools import cycle
 from buttons import MenuButton
 from tools.scales import Scaling
 from pyvidplayer2 import Video
@@ -119,12 +123,51 @@ class Menu(View):
         super().__init__(surface)
 
         self._footer = pg.image.load('pacman/interface/assets/footer.png')
+        self._fill_auth = True
 
     def _get_events(self):
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 pg.event.post(pg.event.Event(ViewAction.EXIT.value))
                 self._running = False
+
+    def _background_animation(self) -> Generator:
+        pacman = [
+            pg.image.load('pacman/interface/assets/pacman/tile_0001.png'),
+            pg.image.load('pacman/interface/assets/pacman/tile_0002.png'),
+            pg.image.load('pacman/interface/assets/pacman/tile_0003.png'),
+            pg.image.load('pacman/interface/assets/pacman/tile_0002.png'),
+        ]
+        x = 0
+        y = 0
+        pacman_sequence = cycle(pacman)
+        last_time = 0
+        commands = (5, 0)
+        while self._running:
+            current_time = time() / 1000
+            for event in pg.event.get(pg.KEYUP):
+                if event.type == pg.KEYUP:
+                    if event.key == pg.K_UP:
+                        commands = (0, -5)
+                    if event.key == pg.K_DOWN:
+                        commands = (0, 5)
+                    if event.key == pg.K_LEFT:
+                        commands = (-5, 0)
+                    if event.key == pg.K_RIGHT:
+                        commands = (5, 0)
+            if current_time - 0.00007 > last_time:
+                pacman_frame = next(pacman_sequence)
+                if commands[0] < 0:
+                    pacman_frame = pg.transform.flip(pacman_frame, 1, 0)
+                elif commands[1] < 0:
+                    pacman_frame = pg.transform.rotate(pacman_frame, 90)
+                elif commands[1] > 0:
+                    pacman_frame = pg.transform.rotate(pacman_frame, 270)
+                last_time = current_time
+                x += commands[0]
+                y += commands[1]
+            self._surface.blit(pacman_frame, (x, y))
+            yield
 
     def _update_buttons(self) -> None:
         width = self._surface.get_width()
@@ -169,22 +212,17 @@ class Menu(View):
             ViewAction.EXIT)
 
     def run(self):
-        self._surface.fill('wheat')
-
-        surface_w = self._surface.get_width()
-        surface_h = self._surface.get_height()
-        footer_w = self._footer.get_width()
-
-        footer_scale = ((surface_w * 100) / footer_w) / 100
-        # scaled_footer = pg.transform.scale_by(self._footer, footer_scale)
 
         self._update_buttons()
+        animation = self._background_animation()
 
         while self._running:
+            self._surface.fill('lightcyan')
+            next(animation)
             self._get_events()
             self._menu_button_play.render()
             self._menu_button_leaderboard.render()
             self._menu_button_settings.render()
             self._menu_button_exit.render()
-            # self._surface.blit(scaled_footer, (0, surface_h - scaled_footer.get_height()))
-            pg.display.flip()
+            pg.display.update()
+

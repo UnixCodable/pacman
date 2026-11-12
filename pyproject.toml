@@ -7,6 +7,7 @@ requires-python = ">=3.13"
 dependencies = [
     "pygame>=2.6.1",
     "pyvidplayer2>=0.9.37",
+    "mazegenerator",
 ]
 
 [dependency-groups]
@@ -14,3 +15,6 @@ dev = ["pytest>=8"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
+
+[tool.uv.sources]
+mazegenerator = { path = "mazegenerator-00001/mazegenerator-2.1.0-py3-none-any.whl" }

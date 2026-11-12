@@ -1,12 +1,9 @@
-
-from __future__ import annotations
-
 import io
 import logging
 from typing import Any
 from contextlib import redirect_stdout
 from random import Random
-from pacman.maze import Direction, Maze
+from src.maze import Direction, Maze
 
 logger = logging.getLogger(__name__)
 

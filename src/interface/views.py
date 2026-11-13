@@ -4,12 +4,17 @@ from typing import Generator
 import pygame as pg
 import sys
 from itertools import cycle
-from buttons import MenuButton
-from tools.scales import Scaling
+
+from src.maze import Direction
+from .buttons import MenuButton
+from ..config import ConfigParser
+from ..session import GameSession
+from .tools.scales import Scaling
 from pyvidplayer2 import Video
 from abc import ABC, abstractmethod
-from actions.views_actions import ViewAction
+from .actions.views_actions import ViewAction
 
+MAP_PATH = "src/interface/assets/map"
 
 class View(ABC):
 
@@ -28,7 +33,8 @@ class View(ABC):
 
 
 class Settings(View):
-    def __init__(self):
+    def __init__(self, surface: pg.Surface):
+        super().__init__(surface)
         self._running = True
 
     def _get_events(self):
@@ -44,7 +50,8 @@ class Settings(View):
 
 
 class Leaderboard(View):
-    def __init__(self):
+    def __init__(self, surface: pg.Surface):
+        super().__init__(surface)
         self._running = True
 
     def _get_events(self):
@@ -61,8 +68,65 @@ class Leaderboard(View):
 
 class Game(View):
 
-    def __init__(self):
+    def __init__(self, surface: pg.Surface):
+
+        super().__init__(surface)
+
         self._running = True
+        self._config = ConfigParser().load_config("config.json")
+        self._session = GameSession(self._config)
+
+    def _draw_maze(self) -> pg.Surface:
+        width = self._session.game.maze.width
+        height = self._session.game.maze.height
+
+        walls_assets = {
+            "top": pg.image.load(f"{MAP_PATH}/tile_0062.png"),
+            "bottom": pg.image.load(f"{MAP_PATH}/tile_0100.png"),
+            "left": pg.image.load(f"{MAP_PATH}/tile_0080.png"),
+            "right": pg.image.load(f"{MAP_PATH}/tile_0082.png")
+        }
+
+        inter_assets = {
+            "left_top_corner": pg.image.load(f"{MAP_PATH}/tile_0061.png"),
+            "right_top_corner": pg.image.load(f"{MAP_PATH}/tile_0063.png"),
+            "left_bottom_corner": pg.image.load(f"{MAP_PATH}/tile_0099.png"),
+            "right_bottom_corner": pg.image.load(f"{MAP_PATH}/tile_0101.png"),
+            "tri_left": pg.image.load(f"{MAP_PATH}/tile_0091.png"),
+            "tri_up": pg.image.load(f"{MAP_PATH}/tile_0090.png"),
+            "tri_right": pg.image.load(f"{MAP_PATH}/tile_0071.png"),
+            "tri_bottom": pg.image.load(f"{MAP_PATH}/tile_0072.png"),
+            "solo_left": pg.image.load(f"{MAP_PATH}/tile_0068.png"),
+            "solo_up": pg.image.load(f"{MAP_PATH}/tile_0087.png"),
+            "solo_bottom": pg.image.load(f"{MAP_PATH}/tile_0067.png"),
+            "solo_right": pg.image.load(f"{MAP_PATH}/tile_0086.png"),
+        }
+
+        surface = pg.Surface((width * 16 * 2 + 16, height * 16 * 2 + 16))
+        surface.fill('wheat')
+        walls = self._session.game.maze.walls
+
+        for pos_y in range(len(walls)):
+            for pos_x, wall in enumerate(walls[pos_y]):
+                y = 16 + (pos_y * 16 * 2)
+                x = 16 + (pos_x * 16 * 2)
+                print(x, y, wall)
+                for w in wall:
+                    if w == Direction.EAST:
+                        surface.blit(walls_assets['right'], (x + 16, y))
+                    elif w == Direction.WEST:
+                        surface.blit(walls_assets['left'], (x - 16, y))
+                    elif w == Direction.NORTH:
+                        surface.blit(walls_assets['top'], (x, y - 16))
+                    elif w == Direction.SOUTH:
+                        surface.blit(walls_assets['bottom'], (x, y + 16))
+
+        surface = pg.transform.scale_by(surface, 2.5)
+
+        return surface
+
+    def _update_hud(self) -> Generator:
+        pass
 
     def _get_events(self):
         for event in pg.event.get():
@@ -71,7 +135,11 @@ class Game(View):
                 self._running = False
 
     def run(self):
+        maze = self._draw_maze()
+
         while self._running:
+            self._surface.fill('white')
+            self._surface.blit(maze, (0, 0))
             self._get_events()
             pg.display.flip()
 
@@ -122,21 +190,23 @@ class Menu(View):
 
         super().__init__(surface)
 
-        self._footer = pg.image.load('pacman/interface/assets/footer.png')
-        self._fill_auth = True
+        self._footer = pg.image.load('src/interface/assets/footer.png')
 
     def _get_events(self):
-        for event in pg.event.get():
+        for event in pg.event.get(exclude=(pg.KEYUP, pg.MOUSEBUTTONUP)):
             if event.type == pg.QUIT:
                 pg.event.post(pg.event.Event(ViewAction.EXIT.value))
+                self._running = False
+            if event.type == ViewAction.GAME.value:
+                pg.event.post(pg.event.Event(ViewAction.GAME.value))
                 self._running = False
 
     def _background_animation(self) -> Generator:
         pacman = [
-            pg.image.load('pacman/interface/assets/pacman/tile_0001.png'),
-            pg.image.load('pacman/interface/assets/pacman/tile_0002.png'),
-            pg.image.load('pacman/interface/assets/pacman/tile_0003.png'),
-            pg.image.load('pacman/interface/assets/pacman/tile_0002.png'),
+            pg.image.load('src/interface/assets/pacman/tile_0001.png'),
+            pg.image.load('src/interface/assets/pacman/tile_0002.png'),
+            pg.image.load('src/interface/assets/pacman/tile_0003.png'),
+            pg.image.load('src/interface/assets/pacman/tile_0002.png'),
         ]
         x = 0
         y = 0
@@ -219,10 +289,9 @@ class Menu(View):
         while self._running:
             self._surface.fill('lightcyan')
             next(animation)
-            self._get_events()
             self._menu_button_play.render()
             self._menu_button_leaderboard.render()
             self._menu_button_settings.render()
             self._menu_button_exit.render()
+            self._get_events()
             pg.display.update()
-

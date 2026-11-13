@@ -1,7 +1,7 @@
 import pygame as pg
 
 from enum import Enum
-from tools.scales import Scaling
+from .tools.scales import Scaling
 from abc import ABC, abstractmethod
 
 
@@ -48,7 +48,7 @@ class MenuButton(Button):
 
         self._color = pg.Color('lightslateblue')
         self._color_hover = pg.Color('goldenrod1')
-        self._font = pg.font.Font("pacman/interface/assets/fonts/Emulogic.ttf",
+        self._font = pg.font.Font("src/interface/assets/fonts/Emulogic.ttf",
                                   self._scale.text(2.5))
 
     def render(self) -> None:

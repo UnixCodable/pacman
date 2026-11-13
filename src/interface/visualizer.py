@@ -1,8 +1,8 @@
 import pygame as pg
 import sys
 from pyvidplayer2 import Video
-from views import Cinematics, Menu, Settings, Leaderboard, Game
-from actions.views_actions import ViewAction
+from .views import Cinematics, Menu, Settings, Leaderboard, Game
+from .actions.views_actions import ViewAction
 
 pg.init()
 pg.display.set_caption("Pacman: 44 years later")
@@ -13,13 +13,13 @@ class Window:
         self._surface = pg.display.set_mode((1440, 1080))
         self._running = True
         self._intro = Cinematics(
-            Video('pacman/interface/assets/cinematics/intro.mp4'),
+            Video('src/interface/assets/cinematics/intro.mp4'),
             self._surface
         )
         self._menu = Menu(self._surface)
-        self._settings = Settings()
-        self._leaderboard = Leaderboard()
-        self._game = Game()
+        self._settings = Settings(self._surface)
+        self._leaderboard = Leaderboard(self._surface)
+        self._game = Game(self._surface)
 
     def _get_events(self):
         for event in pg.event.get():

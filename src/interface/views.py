@@ -88,18 +88,18 @@ class Game(View):
         }
 
         inter_assets = {
-            "left_top_corner": pg.image.load(f"{MAP_PATH}/tile_0061.png"),
-            "right_top_corner": pg.image.load(f"{MAP_PATH}/tile_0063.png"),
-            "left_bottom_corner": pg.image.load(f"{MAP_PATH}/tile_0099.png"),
-            "right_bottom_corner": pg.image.load(f"{MAP_PATH}/tile_0101.png"),
-            "tri_left": pg.image.load(f"{MAP_PATH}/tile_0091.png"),
-            "tri_up": pg.image.load(f"{MAP_PATH}/tile_0090.png"),
-            "tri_right": pg.image.load(f"{MAP_PATH}/tile_0071.png"),
-            "tri_bottom": pg.image.load(f"{MAP_PATH}/tile_0072.png"),
-            "solo_left": pg.image.load(f"{MAP_PATH}/tile_0068.png"),
-            "solo_up": pg.image.load(f"{MAP_PATH}/tile_0087.png"),
-            "solo_bottom": pg.image.load(f"{MAP_PATH}/tile_0067.png"),
-            "solo_right": pg.image.load(f"{MAP_PATH}/tile_0086.png"),
+            1001: pg.image.load(f"{MAP_PATH}/tile_0061.png"),
+            101: pg.image.load(f"{MAP_PATH}/tile_0063.png"),
+            1010: pg.image.load(f"{MAP_PATH}/tile_0099.png"),
+            110: pg.image.load(f"{MAP_PATH}/tile_0101.png"),
+            111: pg.image.load(f"{MAP_PATH}/tile_0091.png"),
+            1110: pg.image.load(f"{MAP_PATH}/tile_0090.png"),
+            1011: pg.image.load(f"{MAP_PATH}/tile_0071.png"),
+            1101: pg.image.load(f"{MAP_PATH}/tile_0072.png"),
+            100: pg.image.load(f"{MAP_PATH}/tile_0068.png"),  # WEST
+            10: pg.image.load(f"{MAP_PATH}/tile_0087.png"),  # UP
+            1: pg.image.load(f"{MAP_PATH}/tile_0067.png"),  # DOWN
+            1000: pg.image.load(f"{MAP_PATH}/tile_0086.png"),  # EAST
         }
 
         surface = pg.Surface((width * 16 * 2 + 16, height * 16 * 2 + 16))
@@ -118,12 +118,50 @@ class Game(View):
                 for w in wall:
                     if w == Direction.EAST:
                         surface.blit(walls_assets['right'], (x + 16, y))
+                        try:
+                            temp = intersections[(pos_x + 1, pos_y)] + 1
+                            intersections.update({(pos_x + 1, pos_y): temp})
+                            temp = intersections[(pos_x + 1, pos_y + 1)] + 10
+                            intersections.update({(pos_x + 1, pos_y + 1): temp})
+                        except KeyError as err:
+                            print(err)
                     elif w == Direction.WEST:
                         surface.blit(walls_assets['left'], (x - 16, y))
+                        try:
+                            temp = intersections[(pos_x, pos_y)] + 1
+                            intersections.update({(pos_x, pos_y): temp})
+                            temp = intersections[(pos_x, pos_y + 1)] + 10
+                            intersections.update({(pos_x, pos_y + 1): temp})
+                        except KeyError:
+                            pass
                     elif w == Direction.NORTH:
                         surface.blit(walls_assets['top'], (x, y - 16))
+                        try:
+                            temp = intersections[(pos_x, pos_y)] + 1000
+                            intersections.update({(pos_x, pos_y): temp})
+                            temp = intersections[(pos_x + 1, pos_y)] + 100
+                            intersections.update({(pos_x + 1, pos_y): temp})
+                        except KeyError:
+                            pass
                     elif w == Direction.SOUTH:
                         surface.blit(walls_assets['bottom'], (x, y + 16))
+                        try:
+                            temp = intersections[(pos_x, pos_y + 1)] + 1000
+                            intersections.update({(pos_x, pos_y + 1): temp})
+                            temp = intersections[(pos_x + 1, pos_y + 1)] + 100
+                            intersections.update({(pos_x + 1, pos_y + 1): temp})
+                        except KeyError:
+                            pass
+
+        for pos, inter in intersections.items():
+            x = pos[0] * 16 * 2
+            y = pos[1] * 16 * 2
+            binary = int(str(inter).replace('2', '1'))
+            try:
+                surface.blit(inter_assets[binary], (x, y))
+                print(f"done with {binary}")
+            except KeyError:
+                print(f"Key error : {binary}")
 
         surface = pg.transform.scale_by(surface, 2.5)
 

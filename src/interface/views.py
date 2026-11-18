@@ -105,12 +105,16 @@ class Game(View):
         surface = pg.Surface((width * 16 * 2 + 16, height * 16 * 2 + 16))
         surface.fill('wheat')
         walls = self._session.game.maze.walls
+        intersections = {}
+
+        for y in range(height + 1):
+            for x in range(width + 1):
+                intersections.update({(x, y): 0})
 
         for pos_y in range(len(walls)):
             for pos_x, wall in enumerate(walls[pos_y]):
                 y = 16 + (pos_y * 16 * 2)
                 x = 16 + (pos_x * 16 * 2)
-                print(x, y, wall)
                 for w in wall:
                     if w == Direction.EAST:
                         surface.blit(walls_assets['right'], (x + 16, y))

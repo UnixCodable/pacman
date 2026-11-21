@@ -76,57 +76,96 @@ class Game(View):
         self._config = ConfigParser().load_config("config.json")
         self._session = GameSession(self._config)
 
+    def _draw_pacman(self, maze: pg.Surface):
+        pacman = [
+            pg.image.load('src/interface/assets/pacman/tile_0001.png'),
+            pg.image.load('src/interface/assets/pacman/tile_0002.png'),
+            pg.image.load('src/interface/assets/pacman/tile_0003.png'),
+            pg.image.load('src/interface/assets/pacman/tile_0002.png'),
+        ]
+
+        pacman_sequence = cycle(pacman)
+        last_dir = Direction.EAST
+        last_time = 0
+
+        while self._running:
+            surface = maze.copy()
+            pos = self._session.game.player.position
+            pos_scaled = (pos[0] * 16 * 2.5 * 2 + (16 * 2.5), pos[1] * 16 * 2.5 * 2 + (16 * 2.5))
+            current_time = time() / 1000
+
+            if current_time - 0.00007 > last_time:
+                direction = self._session.game.player.direction
+                pacman_frame = next(pacman_sequence)
+                pacman_frame = pg.transform.scale(pacman_frame, (16 * 2.5, 16 * 2.5))
+                if direction is None:
+                    direction = last_dir
+                if direction == Direction.WEST:
+                    pacman_frame = pg.transform.flip(pacman_frame, 1, 0)
+                    last_dir = Direction.WEST
+                elif direction == Direction.NORTH:
+                    pacman_frame = pg.transform.rotate(pacman_frame, 90)
+                    last_dir = Direction.NORTH
+                elif direction == Direction.SOUTH:
+                    pacman_frame = pg.transform.rotate(pacman_frame, 270)
+                    last_dir = Direction.SOUTH
+                else:
+                    last_dir = Direction.EAST
+                last_time = current_time
+
+            surface.blit(pacman_frame, pos_scaled)
+
+            self._surface.blit(surface, (0, 0))
+
+            yield
+
     def _draw_maze(self) -> pg.Surface:
         width = self._session.game.maze.width
         height = self._session.game.maze.height
 
-        walls_assets = {
-            "top": pg.image.load(f"{MAP_PATH}/tile_0062.png"),
-            "bottom": pg.image.load(f"{MAP_PATH}/tile_0100.png"),
-            "left": pg.image.load(f"{MAP_PATH}/tile_0080.png"),
-            "right": pg.image.load(f"{MAP_PATH}/tile_0082.png")
-        }
-
-        inter_assets = {
-            1001: pg.image.load(f"{MAP_PATH}/tile_0061.png"),
-            101: pg.image.load(f"{MAP_PATH}/tile_0063.png"),
-            1010: pg.image.load(f"{MAP_PATH}/tile_0099.png"),
-            110: pg.image.load(f"{MAP_PATH}/tile_0101.png"),
-            111: pg.image.load(f"{MAP_PATH}/tile_0091.png"),
-            1110: pg.image.load(f"{MAP_PATH}/tile_0090.png"),
-            1011: pg.image.load(f"{MAP_PATH}/tile_0071.png"),
-            1101: pg.image.load(f"{MAP_PATH}/tile_0072.png"),
-            100: pg.image.load(f"{MAP_PATH}/tile_0068.png"),  # WEST
-            10: pg.image.load(f"{MAP_PATH}/tile_0087.png"),  # UP
-            1: pg.image.load(f"{MAP_PATH}/tile_0067.png"),  # DOWN
-            1000: pg.image.load(f"{MAP_PATH}/tile_0086.png"),  # EAST
+        walls = {
+            0: pg.image.load(f"{MAP_PATH}/tile_0237.png"),
+            1: pg.image.load(f"{MAP_PATH}/tile_0067.png"),
+            2: pg.image.load(f"{MAP_PATH}/tile_0087.png"),
+            3: pg.image.load(f"{MAP_PATH}/tile_0080.png"),
+            4: pg.image.load(f"{MAP_PATH}/tile_0068.png"),
+            5: pg.image.load(f"{MAP_PATH}/tile_0063.png"),
+            6: pg.image.load(f"{MAP_PATH}/tile_0101.png"),
+            7: pg.image.load(f"{MAP_PATH}/tile_0091.png"),
+            8: pg.image.load(f"{MAP_PATH}/tile_0086.png"),
+            9: pg.image.load(f"{MAP_PATH}/tile_0061.png"),
+            10: pg.image.load(f"{MAP_PATH}/tile_0099.png"),
+            11: pg.image.load(f"{MAP_PATH}/tile_0071.png"),
+            12: pg.image.load(f"{MAP_PATH}/tile_0100.png"),
+            13: pg.image.load(f"{MAP_PATH}/tile_0072.png"),
+            14: pg.image.load(f"{MAP_PATH}/tile_0090.png"),
         }
 
         surface = pg.Surface((width * 16 * 2 + 16, height * 16 * 2 + 16))
         surface.fill('wheat')
-        walls = self._session.game.maze.walls
+        walls_pos = self._session.game.maze.walls
         intersections = {}
 
         for y in range(height + 1):
             for x in range(width + 1):
                 intersections.update({(x, y): 0})
 
-        for pos_y in range(len(walls)):
-            for pos_x, wall in enumerate(walls[pos_y]):
+        for pos_y in range(len(walls_pos)):
+            for pos_x, wall in enumerate(walls_pos[pos_y]):
                 y = 16 + (pos_y * 16 * 2)
                 x = 16 + (pos_x * 16 * 2)
                 for w in wall:
                     if w == Direction.EAST:
-                        surface.blit(walls_assets['right'], (x + 16, y))
+                        surface.blit(walls[3], (x + 16, y))
                         try:
                             temp = intersections[(pos_x + 1, pos_y)] + 1
                             intersections.update({(pos_x + 1, pos_y): temp})
                             temp = intersections[(pos_x + 1, pos_y + 1)] + 10
                             intersections.update({(pos_x + 1, pos_y + 1): temp})
-                        except KeyError as err:
-                            print(err)
+                        except KeyError:
+                            pass
                     elif w == Direction.WEST:
-                        surface.blit(walls_assets['left'], (x - 16, y))
+                        surface.blit(walls[3], (x - 16, y))
                         try:
                             temp = intersections[(pos_x, pos_y)] + 1
                             intersections.update({(pos_x, pos_y): temp})
@@ -135,7 +174,7 @@ class Game(View):
                         except KeyError:
                             pass
                     elif w == Direction.NORTH:
-                        surface.blit(walls_assets['top'], (x, y - 16))
+                        surface.blit(walls[12], (x, y - 16))
                         try:
                             temp = intersections[(pos_x, pos_y)] + 1000
                             intersections.update({(pos_x, pos_y): temp})
@@ -144,7 +183,7 @@ class Game(View):
                         except KeyError:
                             pass
                     elif w == Direction.SOUTH:
-                        surface.blit(walls_assets['bottom'], (x, y + 16))
+                        surface.blit(walls[12], (x, y + 16))
                         try:
                             temp = intersections[(pos_x, pos_y + 1)] + 1000
                             intersections.update({(pos_x, pos_y + 1): temp})
@@ -156,10 +195,9 @@ class Game(View):
         for pos, inter in intersections.items():
             x = pos[0] * 16 * 2
             y = pos[1] * 16 * 2
-            binary = int(str(inter).replace('2', '1'))
+            binary = int('0b' + str(inter).replace('2', '1'), 2)
             try:
-                surface.blit(inter_assets[binary], (x, y))
-                print(f"done with {binary}")
+                surface.blit(walls[binary], (x, y))
             except KeyError:
                 print(f"Key error : {binary}")
 
@@ -175,14 +213,26 @@ class Game(View):
             if event.type == pg.QUIT:
                 pg.event.post(pg.event.Event(ViewAction.EXIT.value))
                 self._running = False
+            if event.type == pg.KEYUP:
+                if event.key == pg.K_RIGHT:
+                    self._session.set_direction(Direction.EAST)
+                if event.key == pg.K_LEFT:
+                    self._session.set_direction(Direction.WEST)
+                if event.key == pg.K_UP:
+                    self._session.set_direction(Direction.NORTH)
+                if event.key == pg.K_DOWN:
+                    self._session.set_direction(Direction.SOUTH)
 
     def run(self):
         maze = self._draw_maze()
+        pacman = self._draw_pacman(maze)
 
         while self._running:
             self._surface.fill('white')
-            self._surface.blit(maze, (0, 0))
+            next(pacman)
+            # self._surface.blit(maze, (0, 0))
             self._get_events()
+            self._session.update(0.002)
             pg.display.flip()
 
 

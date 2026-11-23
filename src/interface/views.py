@@ -75,6 +75,35 @@ class Game(View):
         self._running = True
         self._config = ConfigParser().load_config("config.json")
         self._session = GameSession(self._config)
+        self._accumulated = 0
+
+    def _calc_pos(self, pos: tuple[int, int]):
+        case_interval = self._tile_size * 2
+        time_interval = self._session.game.player_interval
+        self._accumulated += self._dt
+        dt = self._accumulated
+
+        interval = case_interval * (1.0 - dt / time_interval)
+        # print(dt, time_interval)
+        # print(dt / time_interval)
+        # print(case_interval)
+        # print(interval)
+        direction = self._session.game.player.direction
+
+        print(interval)
+        if direction == Direction.EAST:
+            n_pos = (pos[0] - interval, pos[1])
+        elif direction == Direction.WEST:
+            n_pos = (pos[0] + interval, pos[1])
+        elif direction == Direction.NORTH:
+            n_pos = (pos[0], pos[1] + interval)
+        elif direction == Direction.SOUTH:
+            n_pos = (pos[0], pos[1] - interval)
+        else:
+            n_pos = (pos[0], pos[1])
+
+        print(n_pos)
+        return n_pos
 
     def _draw_pacman(self, maze: pg.Surface):
         pacman = [
@@ -86,18 +115,27 @@ class Game(View):
 
         pacman_sequence = cycle(pacman)
         last_dir = Direction.EAST
+        last_pos = self._session.game.player.position
         last_time = 0
 
         while self._running:
             surface = maze.copy()
             pos = self._session.game.player.position
-            pos_scaled = (pos[0] * 16 * 2.5 * 2 + (16 * 2.5), pos[1] * 16 * 2.5 * 2 + (16 * 2.5))
+            if pos != last_pos:
+                last_pos = pos
+                self._accumulated = 0
+            pos_scaled = (pos[0] * self._tile_size * 2 + self._tile_size,
+                          pos[1] * self._tile_size * 2 + self._tile_size)
             current_time = time() / 1000
+            exact_pos = self._calc_pos(pos_scaled)
 
             if current_time - 0.00007 > last_time:
                 direction = self._session.game.player.direction
                 pacman_frame = next(pacman_sequence)
-                pacman_frame = pg.transform.scale(pacman_frame, (16 * 2.5, 16 * 2.5))
+                pacman_frame = pg.transform.scale(
+                    pacman_frame,
+                    (self._tile_size, self._tile_size)
+                )
                 if direction is None:
                     direction = last_dir
                 if direction == Direction.WEST:
@@ -113,7 +151,8 @@ class Game(View):
                     last_dir = Direction.EAST
                 last_time = current_time
 
-            surface.blit(pacman_frame, pos_scaled)
+            surface.blit(pacman_frame, exact_pos)
+            print(exact_pos)
 
             self._surface.blit(surface, (0, 0))
 
@@ -141,7 +180,9 @@ class Game(View):
             14: pg.image.load(f"{MAP_PATH}/tile_0090.png"),
         }
 
-        surface = pg.Surface((width * 16 * 2 + 16, height * 16 * 2 + 16))
+        tile_size = 16
+        surface = pg.Surface((width * tile_size * 2 + tile_size,
+                              height * tile_size * 2 + tile_size))
         surface.fill('wheat')
         walls_pos = self._session.game.maze.walls
         intersections = {}
@@ -152,11 +193,11 @@ class Game(View):
 
         for pos_y in range(len(walls_pos)):
             for pos_x, wall in enumerate(walls_pos[pos_y]):
-                y = 16 + (pos_y * 16 * 2)
-                x = 16 + (pos_x * 16 * 2)
+                y = tile_size + (pos_y * tile_size * 2)
+                x = tile_size + (pos_x * tile_size * 2)
                 for w in wall:
                     if w == Direction.EAST:
-                        surface.blit(walls[3], (x + 16, y))
+                        surface.blit(walls[3], (x + tile_size, y))
                         try:
                             temp = intersections[(pos_x + 1, pos_y)] + 1
                             intersections.update({(pos_x + 1, pos_y): temp})
@@ -165,7 +206,7 @@ class Game(View):
                         except KeyError:
                             pass
                     elif w == Direction.WEST:
-                        surface.blit(walls[3], (x - 16, y))
+                        surface.blit(walls[3], (x - tile_size, y))
                         try:
                             temp = intersections[(pos_x, pos_y)] + 1
                             intersections.update({(pos_x, pos_y): temp})
@@ -174,7 +215,7 @@ class Game(View):
                         except KeyError:
                             pass
                     elif w == Direction.NORTH:
-                        surface.blit(walls[12], (x, y - 16))
+                        surface.blit(walls[12], (x, y - tile_size))
                         try:
                             temp = intersections[(pos_x, pos_y)] + 1000
                             intersections.update({(pos_x, pos_y): temp})
@@ -183,7 +224,7 @@ class Game(View):
                         except KeyError:
                             pass
                     elif w == Direction.SOUTH:
-                        surface.blit(walls[12], (x, y + 16))
+                        surface.blit(walls[12], (x, y + tile_size))
                         try:
                             temp = intersections[(pos_x, pos_y + 1)] + 1000
                             intersections.update({(pos_x, pos_y + 1): temp})
@@ -193,15 +234,17 @@ class Game(View):
                             pass
 
         for pos, inter in intersections.items():
-            x = pos[0] * 16 * 2
-            y = pos[1] * 16 * 2
+            x = pos[0] * tile_size * 2
+            y = pos[1] * tile_size * 2
             binary = int('0b' + str(inter).replace('2', '1'), 2)
             try:
                 surface.blit(walls[binary], (x, y))
             except KeyError:
                 print(f"Key error : {binary}")
 
-        surface = pg.transform.scale_by(surface, 2.5)
+        self._maze_scale = self._scale.maze(surface)
+        self._tile_size = tile_size * self._maze_scale
+        surface = pg.transform.scale_by(surface, self._maze_scale)
 
         return surface
 
@@ -226,13 +269,16 @@ class Game(View):
     def run(self):
         maze = self._draw_maze()
         pacman = self._draw_pacman(maze)
+        clock = pg.time.Clock()
 
         while self._running:
             self._surface.fill('white')
+            self._dt = clock.tick(60) / 1000
+            print("DT = ", self._dt)
             next(pacman)
             # self._surface.blit(maze, (0, 0))
             self._get_events()
-            self._session.update(0.002)
+            self._session.update(self._dt)
             pg.display.flip()
 
 

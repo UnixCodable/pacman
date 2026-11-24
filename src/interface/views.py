@@ -100,7 +100,7 @@ class Game(View):
 
         return n_pos
 
-    def _draw_ghost(self, maze: pg.Surface):
+    def _draw_ghost(self, maze: pg.Surface, ghost_number: int):
         ghost = [
             pg.image.load('src/interface/assets/ghost/tile_0001.png'),
             pg.image.load('src/interface/assets/ghost/tile_0002.png'),
@@ -110,23 +110,20 @@ class Game(View):
 
         ghost_sequence = cycle(ghost)
         last_time = 0
-        last_pos = self._session.game.ghosts[0].position
+        last_pos = self._session.game.ghosts[ghost_number].position
         accumulator = 0
 
         while self._running:
-            surface = pg.Surface((maze.get_width(), maze.get_height()),
-                                 pg.SRCALPHA, 32)
-            surface = surface.convert_alpha()
-            pos = self._session.game.ghosts[0].position
+            pos = self._session.game.ghosts[ghost_number].position
             pos_scaled = (pos[0] * self._tile_size * 2 + self._tile_size,
                           pos[1] * self._tile_size * 2 + self._tile_size)
             current_time = time() / 1000
-            direction = self._session.game.ghosts[0].direction
+            direction = self._session.game.ghosts[ghost_number].direction
             if pos != last_pos:
                 last_pos = pos
                 accumulator = 0
             accumulator += self._dt
-            exact_pos = self._calc_pos(pos_scaled, direction, accumulator, self._session.game.ghosts[0].move_interval)
+            exact_pos = self._calc_pos(pos_scaled, direction, accumulator, self._session.game.ghosts[ghost_number].move_interval)
 
             if current_time - 0.00007 > last_time:
                 ghost_frame = next(ghost_sequence)
@@ -136,9 +133,7 @@ class Game(View):
                 )
                 last_time = current_time
 
-            surface.blit(ghost_frame, exact_pos)
-
-            self._surface.blit(surface, (0, 0))
+            self._surface.blit(ghost_frame, exact_pos)
 
             yield
 
@@ -157,9 +152,6 @@ class Game(View):
         accumulator = 0
 
         while self._running:
-            surface = pg.Surface((maze.get_width(), maze.get_height()),
-                                 pg.SRCALPHA, 32)
-            surface = surface.convert_alpha()
             pos = self._session.game.player.position
             if pos != last_pos:
                 last_pos = pos
@@ -192,9 +184,7 @@ class Game(View):
                     last_dir = Direction.EAST
                 last_time = current_time
 
-            surface.blit(pacman_frame, exact_pos)
-
-            self._surface.blit(surface, (0, 0))
+            self._surface.blit(pacman_frame, exact_pos)
 
             yield
 
@@ -309,7 +299,10 @@ class Game(View):
     def run(self):
         maze = self._draw_maze()
         pacman = self._draw_pacman(maze)
-        pinky = self._draw_ghost(maze)
+        ghosts = []
+        print(len(self._session.game.ghosts))
+        for ghost in range(len(self._session.game.ghosts)):
+            ghosts.append(self._draw_ghost(maze, ghost))
 
         clock = pg.time.Clock()
 
@@ -318,7 +311,8 @@ class Game(View):
             self._dt = clock.tick(60) / 1000
             self._surface.blit(maze, (0, 0))
             next(pacman)
-            next(pinky)
+            for ghost in ghosts:
+                next(ghost)
             self._get_events()
             self._session.update(self._dt)
             pg.display.flip()

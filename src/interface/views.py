@@ -5,7 +5,6 @@ import pygame as pg
 import sys
 from itertools import cycle
 
-from src import ghost
 from src.maze import Direction
 from .buttons import MenuButton
 from ..config import ConfigParser
@@ -79,14 +78,10 @@ class Game(View):
         self._accumulated = 0
 
     def _calc_pos(self, pos: tuple[int, int], direction: Direction,
-                  accumulator: bool = False):
+                  accumulator: float, time_interval: float):
         case_interval = self._tile_size * 2
-        time_interval = self._session.game.player_interval
-        if accumulator is True:
-            self._accumulated += self._dt
-        dt = self._accumulated
 
-        interval = case_interval * (1.0 - dt / time_interval)
+        interval = case_interval * (1.0 - accumulator / time_interval)
         # print(dt, time_interval)
         # print(dt / time_interval)
         # print(case_interval)
@@ -115,6 +110,8 @@ class Game(View):
 
         ghost_sequence = cycle(ghost)
         last_time = 0
+        last_pos = self._session.game.ghosts[0].position
+        accumulator = 0
 
         while self._running:
             surface = pg.Surface((maze.get_width(), maze.get_height()),
@@ -125,7 +122,11 @@ class Game(View):
                           pos[1] * self._tile_size * 2 + self._tile_size)
             current_time = time() / 1000
             direction = self._session.game.ghosts[0].direction
-            exact_pos = self._calc_pos(pos_scaled, direction)
+            if pos != last_pos:
+                last_pos = pos
+                accumulator = 0
+            accumulator += self._dt
+            exact_pos = self._calc_pos(pos_scaled, direction, accumulator, self._session.game.ghosts[0].move_interval)
 
             if current_time - 0.00007 > last_time:
                 ghost_frame = next(ghost_sequence)
@@ -153,6 +154,7 @@ class Game(View):
         last_dir = Direction.EAST
         last_pos = self._session.game.player.position
         last_time = 0
+        accumulator = 0
 
         while self._running:
             surface = pg.Surface((maze.get_width(), maze.get_height()),
@@ -161,12 +163,13 @@ class Game(View):
             pos = self._session.game.player.position
             if pos != last_pos:
                 last_pos = pos
-                self._accumulated = 0
+                accumulator = 0
+            accumulator += self._dt
             pos_scaled = (pos[0] * self._tile_size * 2 + self._tile_size,
                           pos[1] * self._tile_size * 2 + self._tile_size)
             current_time = time() / 1000
             direction = self._session.game.player.direction
-            exact_pos = self._calc_pos(pos_scaled, direction, accumulator=True)
+            exact_pos = self._calc_pos(pos_scaled, direction, accumulator, self._session.game.player_interval)
 
             if current_time - 0.00007 > last_time:
                 pacman_frame = next(pacman_sequence)

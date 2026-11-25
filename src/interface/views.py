@@ -5,6 +5,7 @@ import pygame as pg
 import sys
 from itertools import cycle
 
+from src.game import GameState
 from src.maze import Direction
 from .buttons import MenuButton
 from ..config import ConfigParser
@@ -351,6 +352,14 @@ class Game(View):
         clock = pg.time.Clock()
 
         while self._running:
+            state = self._session.game.state
+            if state == GameState.LEVEL_WON:
+                self.run()
+                return
+            if state == GameState.GAME_OVER:
+                pg.event.post(pg.event.Event(ViewAction.MENU.value))
+                self._running = False
+                return
             self._surface.fill('white')
             self._dt = clock.tick(60) / 1000
             self._surface.blit(maze, (0, 0))
@@ -430,7 +439,7 @@ class Menu(View):
         x = 0
         y = 0
         pacman_sequence = cycle(pacman)
-        last_time = 0
+        last_time = 0.0
         commands = (5, 0)
         while self._running:
             current_time = time() / 1000

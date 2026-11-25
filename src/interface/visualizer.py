@@ -19,7 +19,6 @@ class Window:
         self._menu = Menu(self._surface)
         self._settings = Settings(self._surface)
         self._leaderboard = Leaderboard(self._surface)
-        self._game = Game(self._surface)
 
     def _get_events(self):
         for event in pg.event.get():
@@ -28,7 +27,11 @@ class Window:
             if event.type == ViewAction.LEADERBOARD.value:
                 self._leaderboard.run()
             if event.type == ViewAction.GAME.value:
+                self._game = Game(self._surface)
                 self._game.run()
+            if event.type == ViewAction.MENU.value:
+                self._menu = Menu(self._surface)
+                self._menu.run()
             if event.type == ViewAction.EXIT.value:
                 self._running = False
                 pg.quit()

@@ -1,4 +1,4 @@
-from time import time
+from time import sleep, time
 from typing import Generator
 
 import pygame as pg
@@ -80,9 +80,10 @@ class Game(View):
 
     def _calc_pos(self, pos: tuple[int, int], direction: Direction,
                   accumulator: float, time_interval: float):
-        case_interval = self._tile_size * 2
 
+        case_interval = self._tile_size * 2
         interval = case_interval * (1.0 - accumulator / time_interval)
+
         # print(dt, time_interval)
         # print(dt / time_interval)
         # print(case_interval)
@@ -124,6 +125,7 @@ class Game(View):
             yield
 
     def _draw_ghost(self, maze: pg.Surface, ghost_number: int):
+
         ghost = [
             pg.image.load(f'src/interface/assets/ghost/{ghost_number}/tile_0001.png'),
             pg.image.load(f'src/interface/assets/ghost/{ghost_number}/tile_0002.png'),
@@ -252,6 +254,7 @@ class Game(View):
             12: pg.image.load(f"{MAP_PATH}/tile_0100.png"),
             13: pg.image.load(f"{MAP_PATH}/tile_0072.png"),
             14: pg.image.load(f"{MAP_PATH}/tile_0090.png"),
+            15: pg.image.load(f"{MAP_PATH}/tile_0219.png"),
         }
 
         tile_size = 16
@@ -339,37 +342,43 @@ class Game(View):
                     self._session.set_direction(Direction.NORTH)
                 if event.key == pg.K_DOWN:
                     self._session.set_direction(Direction.SOUTH)
+                if event.key == pg.K_l:
+                    self._session.game.force_win()
 
     def run(self):
-        maze = self._draw_maze()
-        pacman = self._draw_pacman(maze)
-        pellet = self._draw_pellets()
-        ghosts = []
-        print(len(self._session.game.ghosts))
-        for ghost in range(len(self._session.game.ghosts)):
-            ghosts.append(self._draw_ghost(maze, ghost))
 
-        clock = pg.time.Clock()
+        state = self._session.game.state
 
-        while self._running:
-            state = self._session.game.state
-            if state == GameState.LEVEL_WON:
-                self.run()
-                return
-            if state == GameState.GAME_OVER:
-                pg.event.post(pg.event.Event(ViewAction.MENU.value))
-                self._running = False
-                return
-            self._surface.fill('white')
-            self._dt = clock.tick(60) / 1000
-            self._surface.blit(maze, (0, 0))
-            next(pellet)
-            next(pacman)
-            for ghost in ghosts:
-                next(ghost)
-            self._get_events()
-            self._session.update(self._dt)
-            pg.display.flip()
+        while state != GameState.VICTORY and self._running:
+
+            maze = self._draw_maze()
+            pacman = self._draw_pacman(maze)
+            pellet = self._draw_pellets()
+            ghosts = []
+            for ghost in range(len(self._session.game.ghosts)):
+                ghosts.append(self._draw_ghost(maze, ghost))
+
+            clock = pg.time.Clock()
+
+            while self._running:
+                state = self._session.game.state
+                self._dt = clock.tick(60) / 1000
+                if state == GameState.LEVEL_WON:
+                    self._session.update(self._dt)
+                    break
+                if state == GameState.GAME_OVER:
+                    pg.event.post(pg.event.Event(ViewAction.MENU.value))
+                    self._running = False
+                    return
+                self._surface.fill('white')
+                self._surface.blit(maze, (0, 0))
+                next(pellet)
+                next(pacman)
+                for ghost in ghosts:
+                    next(ghost)
+                self._get_events()
+                self._session.update(self._dt)
+                pg.display.flip()
 
 
 class Cinematics(View):
@@ -427,6 +436,9 @@ class Menu(View):
                 self._running = False
             if event.type == ViewAction.GAME.value:
                 pg.event.post(pg.event.Event(ViewAction.GAME.value))
+                self._running = False
+            if event.type == ViewAction.EXIT.value:
+                pg.event.post(pg.event.Event(ViewAction.EXIT.value))
                 self._running = False
 
     def _background_animation(self) -> Generator:

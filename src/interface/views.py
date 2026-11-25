@@ -100,16 +100,51 @@ class Game(View):
 
         return n_pos
 
+    def _draw_pellets(self):
+        pellet_frame = pg.image.load('src/interface/assets/map/tile_0239.png')
+        power_frame = pg.image.load('src/interface/assets/map/tile_0237.png')
+        pellet_frame = pellet_frame.convert_alpha()
+        pellet_frame = pg.transform.scale(pellet_frame, (self._tile_size, self._tile_size))
+        power_frame = power_frame.convert_alpha()
+        power_frame = pg.transform.scale(power_frame, (self._tile_size, self._tile_size))
+
+        while self._running:
+
+            for pos in self._session.game.pacgums:
+                pos_scaled = (pos[0] * self._tile_size * 2 + self._tile_size,
+                              pos[1] * self._tile_size * 2 + self._tile_size)
+                self._surface.blit(pellet_frame, pos_scaled)
+
+            for pos in self._session.game.super_pacgums:
+                pos_scaled = (pos[0] * self._tile_size * 2 + self._tile_size,
+                              pos[1] * self._tile_size * 2 + self._tile_size)
+                self._surface.blit(power_frame, pos_scaled)
+
+            yield
+
     def _draw_ghost(self, maze: pg.Surface, ghost_number: int):
         ghost = [
-            pg.image.load('src/interface/assets/ghost/tile_0001.png'),
-            pg.image.load('src/interface/assets/ghost/tile_0002.png'),
-            pg.image.load('src/interface/assets/ghost/tile_0003.png'),
-            pg.image.load('src/interface/assets/ghost/tile_0002.png'),
+            pg.image.load(f'src/interface/assets/ghost/{ghost_number}/tile_0001.png'),
+            pg.image.load(f'src/interface/assets/ghost/{ghost_number}/tile_0002.png'),
+            pg.image.load(f'src/interface/assets/ghost/{ghost_number}/tile_0003.png'),
+            pg.image.load(f'src/interface/assets/ghost/{ghost_number}/tile_0002.png'),
+        ]
+
+        faces = [
+            pg.image.load('src/interface/assets/faces/face_0001.png'),
+            pg.image.load('src/interface/assets/faces/face_0002.png'),
+            pg.image.load('src/interface/assets/faces/face_0003.png'),
+            pg.image.load('src/interface/assets/faces/face_0004.png'),
+            pg.image.load('src/interface/assets/faces/face_0005.png'),
+            pg.image.load('src/interface/assets/faces/face_0006.png')
         ]
 
         ghost_sequence = cycle(ghost)
-        last_time = 0
+        face_sequence = cycle(faces)
+        for _ in range(ghost_number):
+            next(face_sequence)
+        last_animation = 0.0
+        last_face = 0.0
         last_pos = self._session.game.ghosts[ghost_number].position
         accumulator = 0
 
@@ -125,14 +160,23 @@ class Game(View):
             accumulator += self._dt
             exact_pos = self._calc_pos(pos_scaled, direction, accumulator, self._session.game.ghosts[ghost_number].move_interval)
 
-            if current_time - 0.00007 > last_time:
+            if current_time - 0.00007 > last_animation:
                 ghost_frame = next(ghost_sequence)
                 ghost_frame = pg.transform.scale(
                     ghost_frame,
                     (self._tile_size, self._tile_size)
                 )
-                last_time = current_time
+                last_animation = current_time
 
+            if current_time - 0.007 > last_face:
+                face = next(face_sequence)
+                face = pg.transform.scale(
+                                    face,
+                                    (self._tile_size, self._tile_size)
+                                )
+                last_face = current_time
+
+            ghost_frame.blit(face, (0, 0))
             self._surface.blit(ghost_frame, exact_pos)
 
             yield
@@ -148,7 +192,7 @@ class Game(View):
         pacman_sequence = cycle(pacman)
         last_dir = Direction.EAST
         last_pos = self._session.game.player.position
-        last_time = 0
+        last_time = 0.0
         accumulator = 0
 
         while self._running:
@@ -193,7 +237,6 @@ class Game(View):
         height = self._session.game.maze.height
 
         walls = {
-            0: pg.image.load(f"{MAP_PATH}/tile_0237.png"),
             1: pg.image.load(f"{MAP_PATH}/tile_0067.png"),
             2: pg.image.load(f"{MAP_PATH}/tile_0087.png"),
             3: pg.image.load(f"{MAP_PATH}/tile_0080.png"),
@@ -299,6 +342,7 @@ class Game(View):
     def run(self):
         maze = self._draw_maze()
         pacman = self._draw_pacman(maze)
+        pellet = self._draw_pellets()
         ghosts = []
         print(len(self._session.game.ghosts))
         for ghost in range(len(self._session.game.ghosts)):
@@ -310,6 +354,7 @@ class Game(View):
             self._surface.fill('white')
             self._dt = clock.tick(60) / 1000
             self._surface.blit(maze, (0, 0))
+            next(pellet)
             next(pacman)
             for ghost in ghosts:
                 next(ghost)

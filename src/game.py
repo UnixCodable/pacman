@@ -159,6 +159,11 @@ class Game:
 
         return self.move_interval
 
+    @property
+    def accumulator(self) -> float:
+        """Return the accumulation of time"""
+        return self._accumulator
+
     def set_direction(self, direction: Direction) -> None:
         """Set the player's desired direction."""
         self.player.desired = direction

@@ -8,7 +8,7 @@ from src.entities import Player
 from src.maze import Coordinate, Direction, Maze
 
 TIME_EPSILON = 1e-9               # absorbs float rounding in timers
-FRIGHTENED_SLOWDOWN = 1.35        # edible ghosts move 35% slower
+FRIGHTENED_SLOWDOWN = 1.55        # edible ghosts move 55% slower
 AMBUSH_LOOK_AHEAD = 4             # cells ahead of the player
 UNPREDICTABLE_RANDOM_CHANCE = 0.30
 WANDERER_RANDOM_CHANCE = 0.75
@@ -65,6 +65,11 @@ class Ghost:
     def position(self) -> Coordinate:
         """Return the ghost's current position."""
         return (self.x, self.y)
+
+    @property
+    def accumulator(self) -> float:
+        """Return the accumulation of time"""
+        return self._accumulator
 
     def reset(self) -> None:
         """Return to the start cell (used at level start / after a life)."""

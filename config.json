@@ -16,6 +16,6 @@
     {"width": 19, "height": 19, "ghost_speed": 1.3, "level_max_time": 90, "ghost_count": 4},
     {"width": 19, "height": 21, "ghost_speed": 1.35, "level_max_time": 85, "ghost_count": 4},
     {"width": 21, "height": 21, "ghost_speed": 1.4, "level_max_time": 80, "ghost_count": 4},
-    {"width": 23, "height": 23, "ghost_speed": 1.5, "level_max_time": 75, "ghost_count": 5}
+    {"width": 23, "height": 23, "ghost_speed": 1.5, "level_max_time": 75, "ghost_count": 4}
   ]
 }

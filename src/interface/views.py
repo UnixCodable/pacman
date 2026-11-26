@@ -6,6 +6,7 @@ import sys
 from itertools import cycle
 
 from src.game import GameState
+from src.ghost import FRIGHTENED_SLOWDOWN
 from src.maze import Direction
 from .buttons import MenuButton
 from ..config import ConfigParser
@@ -78,16 +79,11 @@ class Game(View):
         self._session = GameSession(self._config)
         self._accumulated = 0
 
-    def _calc_pos(self, pos: tuple[int, int], direction: Direction,
+    def _calc_pos(self, pos: tuple[float, float], direction: Direction,
                   accumulator: float, time_interval: float):
 
         case_interval = self._tile_size * 2
         interval = case_interval * (1.0 - accumulator / time_interval)
-
-        # print(dt, time_interval)
-        # print(dt / time_interval)
-        # print(case_interval)
-        # print(interval)
 
         if direction == Direction.EAST:
             n_pos = (pos[0] - interval, pos[1])
@@ -103,8 +99,8 @@ class Game(View):
         return n_pos
 
     def _draw_pellets(self):
-        pellet_frame = pg.image.load('src/interface/assets/map/tile_0239.png')
-        power_frame = pg.image.load('src/interface/assets/map/tile_0237.png')
+        pellet_frame = pg.image.load('src/interface/assets/items/tile_0009.png')
+        power_frame = pg.image.load('src/interface/assets/items/tile_0010.png')
         pellet_frame = pellet_frame.convert_alpha()
         pellet_frame = pg.transform.scale(pellet_frame, (self._tile_size, self._tile_size))
         power_frame = power_frame.convert_alpha()
@@ -133,6 +129,13 @@ class Game(View):
             pg.image.load(f'src/interface/assets/ghost/{ghost_number}/tile_0002.png'),
         ]
 
+        frightened = [
+            pg.image.load('src/interface/assets/ghost/frightened/tile_0001.png'),
+            pg.image.load('src/interface/assets/ghost/frightened/tile_0002.png'),
+            pg.image.load('src/interface/assets/ghost/frightened/tile_0003.png'),
+            pg.image.load('src/interface/assets/ghost/frightened/tile_0002.png'),
+        ]
+
         faces = [
             pg.image.load('src/interface/assets/faces/face_0001.png'),
             pg.image.load('src/interface/assets/faces/face_0002.png'),
@@ -143,28 +146,43 @@ class Game(View):
         ]
 
         ghost_sequence = cycle(ghost)
+        frightened_sequence = cycle(frightened)
         face_sequence = cycle(faces)
         for _ in range(ghost_number):
             next(face_sequence)
         last_animation = 0.0
         last_face = 0.0
-        last_pos = self._session.game.ghosts[ghost_number].position
-        accumulator = 0
+        # last_pos = self._session.game.ghosts[ghost_number].position
+        # accumulator = 0
 
         while self._running:
-            pos = self._session.game.ghosts[ghost_number].position
+            entity = self._session.game.ghosts[ghost_number]
+            frightened_status = entity.frightened
+
+            pos = entity.position
             pos_scaled = (pos[0] * self._tile_size * 2 + self._tile_size,
                           pos[1] * self._tile_size * 2 + self._tile_size)
+
+            accumulator = entity.accumulator
+            move_interval = entity.move_interval
+
+            direction = entity.direction
+            if frightened_status:
+                exact_pos = self._calc_pos(
+                    pos_scaled, direction, accumulator, move_interval * FRIGHTENED_SLOWDOWN)
+            else:
+                exact_pos = self._calc_pos(
+                    pos_scaled, direction, accumulator, move_interval)
+
             current_time = time() / 1000
-            direction = self._session.game.ghosts[ghost_number].direction
-            if pos != last_pos:
-                last_pos = pos
-                accumulator = 0
-            accumulator += self._dt
-            exact_pos = self._calc_pos(pos_scaled, direction, accumulator, self._session.game.ghosts[ghost_number].move_interval)
 
             if current_time - 0.00007 > last_animation:
-                ghost_frame = next(ghost_sequence)
+                if frightened_status:
+                    ghost_frame = next(frightened_sequence)
+                    next(ghost_sequence)
+                else:
+                    ghost_frame = next(ghost_sequence)
+                    next(frightened_sequence)
                 ghost_frame = pg.transform.scale(
                     ghost_frame,
                     (self._tile_size, self._tile_size)
@@ -179,7 +197,8 @@ class Game(View):
                                 )
                 last_face = current_time
 
-            ghost_frame.blit(face, (0, 0))
+            if not frightened_status:
+                ghost_frame.blit(face, (0, 0))
             self._surface.blit(ghost_frame, exact_pos)
 
             yield
@@ -192,23 +211,23 @@ class Game(View):
             pg.image.load('src/interface/assets/pacman/tile_0002.png'),
         ]
 
+        player = self._session.game.player
+        game = self._session.game
+
         pacman_sequence = cycle(pacman)
         last_dir = Direction.EAST
-        last_pos = self._session.game.player.position
         last_time = 0.0
-        accumulator = 0
 
         while self._running:
-            pos = self._session.game.player.position
-            if pos != last_pos:
-                last_pos = pos
-                accumulator = 0
-            accumulator += self._dt
+            accumulator = game.accumulator
+
+            pos = player.position
             pos_scaled = (pos[0] * self._tile_size * 2 + self._tile_size,
                           pos[1] * self._tile_size * 2 + self._tile_size)
+
             current_time = time() / 1000
-            direction = self._session.game.player.direction
-            exact_pos = self._calc_pos(pos_scaled, direction, accumulator, self._session.game.player_interval)
+            direction = player.direction
+            exact_pos = self._calc_pos(pos_scaled, direction, accumulator, game.player_interval)
 
             if current_time - 0.00007 > last_time:
                 pacman_frame = next(pacman_sequence)
@@ -259,8 +278,11 @@ class Game(View):
 
         tile_size = 16
         surface = pg.Surface((width * tile_size * 2 + tile_size,
-                              height * tile_size * 2 + tile_size))
-        surface.fill('wheat')
+                              height * tile_size * 2 + tile_size), pg.SRCALPHA)
+        surface.fill(
+            'gray17',
+            pg.Rect(5, 5, surface.get_width() - 10, surface.get_height() - 10)
+        )
         walls_pos = self._session.game.maze.walls
         intersections = {}
 
@@ -317,23 +339,40 @@ class Game(View):
             try:
                 surface.blit(walls[binary], (x, y))
             except KeyError:
-                print(f"Key error : {binary}")
+                pass
 
         self._maze_scale = self._scale.maze(surface)
         self._tile_size = tile_size * self._maze_scale
-        surface = pg.transform.scale_by(surface, self._maze_scale)
+        surface = pg.transform.scale_by(surface, self._maze_scale).convert_alpha()
 
         return surface
 
-    def _update_hud(self) -> Generator:
-        pass
+    def _update_hud(self, maze: pg.Surface) -> Generator:
+        maze_width = maze.get_width()
+        screen_width = self._surface.get_width()
+        screen_height = self._surface.get_height()
+
+        level_font = pg.font.Font("src/interface/assets/fonts/Emulogic.ttf",
+                                  self._scale.text(2.5))
+
+        level_text = level_font.render(f"LEVEL {self._session.level_number}",
+                                       1, "white")
+
+        hud_size = (screen_width - maze_width, screen_height)
+        level_pos = ((hud_size[0] / 2 - level_text.get_width() / 2) + maze_width, 30)
+
+        while self._running:
+
+            self._surface.blit(level_text, (level_pos))
+
+            yield
 
     def _get_events(self):
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 pg.event.post(pg.event.Event(ViewAction.EXIT.value))
                 self._running = False
-            if event.type == pg.KEYUP:
+            if event.type == pg.KEYDOWN:
                 if event.key == pg.K_RIGHT:
                     self._session.set_direction(Direction.EAST)
                 if event.key == pg.K_LEFT:
@@ -349,11 +388,12 @@ class Game(View):
 
         state = self._session.game.state
 
-        while state != GameState.VICTORY and self._running:
+        while self._running:
 
             maze = self._draw_maze()
             pacman = self._draw_pacman(maze)
             pellet = self._draw_pellets()
+            hud = self._update_hud(maze)
             ghosts = []
             for ghost in range(len(self._session.game.ghosts)):
                 ghosts.append(self._draw_ghost(maze, ghost))
@@ -365,13 +405,19 @@ class Game(View):
                 self._dt = clock.tick(60) / 1000
                 if state == GameState.LEVEL_WON:
                     self._session.update(self._dt)
+                    state = self._session.game.state
                     break
                 if state == GameState.GAME_OVER:
                     pg.event.post(pg.event.Event(ViewAction.MENU.value))
                     self._running = False
-                    return
-                self._surface.fill('white')
+                    break
+                if state == GameState.VICTORY:
+                    pg.event.post(pg.event.Event(ViewAction.MENU.value))
+                    self._running = False
+                    break
+                self._surface.fill('mediumpurple4')
                 self._surface.blit(maze, (0, 0))
+                next(hud)
                 next(pellet)
                 next(pacman)
                 for ghost in ghosts:

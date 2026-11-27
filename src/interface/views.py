@@ -102,9 +102,11 @@ class Game(View):
         pellet_frame = pg.image.load('src/interface/assets/items/tile_0009.png')
         power_frame = pg.image.load('src/interface/assets/items/tile_0010.png')
         pellet_frame = pellet_frame.convert_alpha()
-        pellet_frame = pg.transform.scale(pellet_frame, (self._tile_size, self._tile_size))
+        pellet_frame = pg.transform.scale(pellet_frame,
+                                          (self._tile_size, self._tile_size))
         power_frame = power_frame.convert_alpha()
-        power_frame = pg.transform.scale(power_frame, (self._tile_size, self._tile_size))
+        power_frame = pg.transform.scale(power_frame,
+                                         (self._tile_size, self._tile_size))
 
         while self._running:
 

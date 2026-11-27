@@ -195,17 +195,26 @@ class Ghost:
 
     def step(self, maze: Maze, player: Player) -> bool:
         """Move one tile. Returns True if the ghost moved."""
+
         if self.is_respawning:
             return False
+
+        moved = False
+
+        if (self.direction is not None
+                and maze.can_move(self.x, self.y, self.direction)):
+            self.x += self.direction.dx
+            self.y += self.direction.dy
+            moved = True
+
         direction = self._choose_direction(maze, player)
         if direction is None or not maze.can_move(
                 self.x, self.y, direction):
             self.direction = None
-            return False
+            return moved
+
         self.direction = direction
-        self.x += direction.dx
-        self.y += direction.dy
-        return True
+        return moved
 
     def update(self, dt: float, maze: Maze, player: Player) -> bool:
         """Advance the ghost by dt seconds. True if it moved."""

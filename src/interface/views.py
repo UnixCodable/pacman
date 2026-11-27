@@ -18,6 +18,7 @@ from .actions.views_actions import ViewAction
 
 MAP_PATH = "src/interface/assets/map"
 
+
 class View(ABC):
 
     def __init__(self, surface: pg.Surface) -> None:
@@ -83,16 +84,16 @@ class Game(View):
                   accumulator: float, time_interval: float):
 
         case_interval = self._tile_size * 2
-        interval = case_interval * (1.0 - accumulator / time_interval)
+        interval = case_interval * (accumulator / time_interval)
 
         if direction == Direction.EAST:
-            n_pos = (pos[0] - interval, pos[1])
-        elif direction == Direction.WEST:
             n_pos = (pos[0] + interval, pos[1])
+        elif direction == Direction.WEST:
+            n_pos = (pos[0] - interval, pos[1])
         elif direction == Direction.NORTH:
-            n_pos = (pos[0], pos[1] + interval)
-        elif direction == Direction.SOUTH:
             n_pos = (pos[0], pos[1] - interval)
+        elif direction == Direction.SOUTH:
+            n_pos = (pos[0], pos[1] + interval)
         else:
             n_pos = (pos[0], pos[1])
 
@@ -207,10 +208,10 @@ class Game(View):
 
     def _draw_pacman(self, maze: pg.Surface):
         pacman = [
-            pg.image.load('src/interface/assets/pacman/tile_0001.png'),
-            pg.image.load('src/interface/assets/pacman/tile_0002.png'),
-            pg.image.load('src/interface/assets/pacman/tile_0003.png'),
-            pg.image.load('src/interface/assets/pacman/tile_0002.png'),
+            pg.transform.scale(pg.image.load('src/interface/assets/pacman/tile_0001.png'), (self._tile_size, self._tile_size)),
+            pg.transform.scale(pg.image.load('src/interface/assets/pacman/tile_0002.png'), (self._tile_size, self._tile_size)),
+            pg.transform.scale(pg.image.load('src/interface/assets/pacman/tile_0003.png'), (self._tile_size, self._tile_size)),
+            pg.transform.scale(pg.image.load('src/interface/assets/pacman/tile_0002.png'), (self._tile_size, self._tile_size)),
         ]
 
         player = self._session.game.player
@@ -233,10 +234,6 @@ class Game(View):
 
             if current_time - 0.00007 > last_time:
                 pacman_frame = next(pacman_sequence)
-                pacman_frame = pg.transform.scale(
-                    pacman_frame,
-                    (self._tile_size, self._tile_size)
-                )
                 if direction is None:
                     direction = last_dir
                 if direction == Direction.WEST:

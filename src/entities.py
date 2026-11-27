@@ -33,19 +33,26 @@ class Player:
         Returns:
             True if the player moved, False otherwise.
         """
-        # 1. Try to take the buffered turn.
+
+        moved = False
+
+        # 1. Reach the target cell.
+        if (self.direction is not None
+                and maze.can_move(self.x, self.y, self.direction)):
+            self.x += self.direction.dx
+            self.y += self.direction.dy
+            moved = True
+
+        # 2. Choose the next direction from the new cell.
         if (self.desired is not None
                 and maze.can_move(self.x, self.y, self.desired)):
             self.direction = self.desired
             self.desired = None
 
-        # 2. Keep going in the current direction.
-        if (self.direction is not None
-                and maze.can_move(self.x, self.y, self.direction)):
-            self.x += self.direction.dx
-            self.y += self.direction.dy
-            return True
+        direction = self.direction
+        if (direction is not None
+                and not maze.can_move(self.x, self.y, direction)):
+            # 3. Blocked: stand still.
+            self.direction = None
 
-        # 3. Blocked: stand still.
-        self.direction = None
-        return False
+        return moved

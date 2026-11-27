@@ -418,9 +418,9 @@ class Game(View):
                 self._surface.blit(maze, (0, 0))
                 next(hud)
                 next(pellet)
-                next(pacman)
                 for ghost in ghosts:
                     next(ghost)
+                next(pacman)
                 self._get_events()
                 self._session.update(self._dt)
                 pg.display.flip()

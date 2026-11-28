@@ -165,6 +165,10 @@ class Maze:
             target = self.center()
         return self.nearest_open_cell(target)
 
+    def super_pacgums_positions(self) -> list[Coordinate]:
+        """Return the open super pacgums positions."""
+        return [self.nearest_open_cell(c) for c in self.corners()]
+
     def ghost_starts(self) -> list[Coordinate]:
         """Return the open cell closest to each corner."""
         cells = [self.nearest_open_cell(c) for c in self.corners()]

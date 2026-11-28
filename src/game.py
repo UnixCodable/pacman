@@ -75,7 +75,7 @@ class Game:
         self.lives = lives
 
         # Collectibles
-        self.super_pacgums = set(maze.ghost_starts())
+        self.super_pacgums = set(maze.super_pacgums_positions())
 
         self.pacgums = (
             set(maze.open_cells())

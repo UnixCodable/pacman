@@ -136,6 +136,14 @@ class Maze:
         return ((0, 0), (self.width - 1, 0),
                 (0, self.height - 1), (self.width - 1, self.height - 1))
 
+    def mid_corners(self) -> tuple[Coordinate, Coordinate, Coordinate,
+                                   Coordinate]:
+        half_top = (int(self.width / 2), 0)
+        half_bottom = (int(self.width / 2), self.height - 1)
+        half_left = (0, int(self.height / 2))
+        half_right = (self.width - 1, int(self.height / 2))
+        return (half_top, half_bottom, half_left, half_right)
+
     def blocked_cells(self) -> list[Coordinate]:
         """Return every fully walled cell (the '42' blocks)."""
         return [c for c in self.all_cells() if self.is_blocked(*c)]
@@ -159,7 +167,9 @@ class Maze:
 
     def ghost_starts(self) -> list[Coordinate]:
         """Return the open cell closest to each corner."""
-        return [self.nearest_open_cell(c) for c in self.corners()]
+        cells = [self.nearest_open_cell(c) for c in self.corners()]
+        cells.extend([self.nearest_open_cell(c) for c in self.mid_corners()])
+        return cells
 
     def is_connected(self) -> bool:
         """Return True if every open cell is reachable from the start."""

@@ -1,3 +1,4 @@
+from threading import Thread
 from time import sleep, time
 from typing import Generator
 
@@ -367,6 +368,7 @@ class Game(View):
             yield
 
     def _get_events(self):
+        # while self._running:
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 pg.event.post(pg.event.Event(ViewAction.EXIT.value))
@@ -386,6 +388,7 @@ class Game(View):
     def run(self):
 
         state = self._session.game.state
+        # Thread(target=self._get_events).start()
 
         while self._running:
 
@@ -400,11 +403,12 @@ class Game(View):
             clock = pg.time.Clock()
 
             while self._running:
-                state = self._session.game.state
+                self._get_events()
+                state = self._session.state
                 self._dt = clock.tick(60) / 1000
                 if state == GameState.LEVEL_WON:
                     self._session.update(self._dt)
-                    state = self._session.game.state
+                    state = self._session.state
                     break
                 if state == GameState.GAME_OVER:
                     pg.event.post(pg.event.Event(ViewAction.MENU.value))
@@ -421,7 +425,6 @@ class Game(View):
                 for ghost in ghosts:
                     next(ghost)
                 next(pacman)
-                self._get_events()
                 self._session.update(self._dt)
                 pg.display.flip()
 
